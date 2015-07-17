@@ -18,7 +18,7 @@
 
 (defn- format-sql-exception [sqlex]
   (when sqlex
-    (if-not (conf/config :error-long-format)
+    (if-not (conf/config :errorlong)
       (format "Error: %s" (.getMessage sqlex))
       (format "Error: %s
   state: %s

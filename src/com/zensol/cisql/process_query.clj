@@ -44,9 +44,9 @@
             (str/trim
              (subs line 0 (- (count line)
                              (count (conf/config key))))))]
-    (cond (has-end-tok :line-terminator false)
+    (cond (has-end-tok :linesep false)
           (do (with-query
-                (print (find-keyword :line-terminator)))
+                (print (find-keyword :linesep)))
               {:dir :end-query})
 
           (has-end-tok :end-directive true)

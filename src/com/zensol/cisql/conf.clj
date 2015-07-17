@@ -1,23 +1,24 @@
 (ns com.zensol.cisql.conf
-  (:require [clojure.string :as str])
+  (:require [clojure.string :as str]
+            [clojure.tools.logging :as log])
   (:require [cisql.version :as ver]))
 
 (def ^:private config-data
   (atom {:gui false
-         :line-terminator "go"
-         :error-long-format false
+         :linesep "go"
+         :errorlong false
          :prompt " %1$s > "
          :end-directive "exit"
          :help-directive "help"}))
 
 (def ^:private parse-keys
-  #{:error-long-format})
+  #{:errorlong :gui})
 
 (def ^:private key-desc
   {:gui "whether or not to use a graphical window to display result sets"
-   :line-terminator "tell where to end a query and then send"
+   :linesep "tell where to end a query and then send"
    :prompt "a format string for the promp"
-   :error-long-format "if true provide more error information"})
+   :errorlong "if true provide more error information"})
 
 (def ^:private help-message
   "type 'help' to see a list of commands")
@@ -28,11 +29,13 @@
    :tg "[variable]        toggle a boolean variable"})
 
 (defn set-config [key value]
+  (log/tracef "%s -> %s" key value)
   (let [val (if (and (contains? parse-keys key)
                      (string? value))
               (read-string value)
               value)]
-    (swap! config-data assoc key val)))
+    (swap! config-data assoc key val)
+    (log/tracef "vars: %s" @config-data)))
 
 (defn config [key]
   (get @config-data key))

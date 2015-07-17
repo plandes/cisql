@@ -24,9 +24,10 @@
     :default "localhost"]
    ["-d" "--database <DB name>" "database name"]
    [nil "--port <number>" "database port"]
+   ["-c" "--config <key1=val1>[,key2=val2] ..."
+    :parse-fn (fn [op] (map #(str/split % #"=") (str/split op #"\s*,\s*")))]
    ["-v" "--version"]
-   [nil "--help"]
-   ])
+   [nil "--help"]])
 
 (defn- map-subproto [name host port-or-nil database]
   (let [portn (or port-or-nil
@@ -65,6 +66,13 @@
   (str "The following errors occurred while parsing your command:\n\n"
        (str/join \newline errors)))
 
+(defn- print-help [summary]
+  (println (conf/format-intro))
+  (println \newline)
+  (println summary)
+  (println \newline)
+  (println "Database subprotocols include:" product-list))
+
 (defn start-event-loop [dbspec]
   (log/debug "staring loop")
   (binding [query/*std-in* (BufferedReader. (InputStreamReader. System/in))]
@@ -75,25 +83,23 @@
                      (System/exit 0))
       :end-file (fn [_] (System/exit 0))})))
 
+(defn- configure [conf]
+  (doseq [[k v] conf]
+    (log/debugf "%s -> %s" (keyword k) v)
+    (conf/set-config (keyword k) v)))
+
 (defn -main [& args]
   (let [{summary :summary opts :options errs :errors}
         (parse-opts args cli-options :in-order true)]
     (try
       (if errs
         (throw (ExceptionInfo. (error-msg errs) {})))
-      (cond (:help opts)
-            (do
-              (println (conf/format-intro))
-              (println \newline)
-              (println summary)
-              (println \newline)
-              (println "Database subprotocols include:" product-list))
-
-            (:version opts)
-            (println (conf/format-version))
-
+      (cond (:help opts) (print-help summary)
+            (:version opts) (println (conf/format-version))
             true
             (let [dbspec (create-db-spec opts)]
+              (if (:config opts)
+                (configure (:config opts)))
               (conf/print-help false)
               (log/infof "connecting to %s..." (:subname dbspec))
               (log/debugf "dbspec: %s" dbspec)
