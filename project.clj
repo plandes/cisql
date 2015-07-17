@@ -5,6 +5,9 @@
   :codox {:defaults {:doc/format :markdown}
           :output-dir "target/doc/codox"}
   :dependencies [[org.clojure/clojure "1.6.0"]
+                
+                 [org.clojure/java.jdbc "0.3.7"]
+                 [mysql/mysql-connector-java "5.1.35"]
 
                  ;; command line
                  [org.clojure/tools.cli "0.3.1"]

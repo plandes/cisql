@@ -1,15 +1,14 @@
 (ns com.zensol.cisql.event-loop
   (:require [clojure.tools.logging :as log]
             [clojure.string :as str])
-  (:use [clojure.pprint :only (pprint)])
-  (:import (java.io BufferedReader InputStreamReader StringReader)))
+  (:use [clojure.pprint :only (pprint print-table)])
+  (:require [clojure.java.jdbc :as jdbc])
+  (:import (java.io BufferedReader InputStreamReader StringReader))
+  (:import (java.sql SQLException))
+  (:require [com.zensol.cisql.conf :as c]))
 
 (def ^{:private true
        :dynamic true} *std-in* nil)
-
-(def ^:private config-data
-  (atom {:line-terminator "go"
-         :end-directive "end"}))
 
 (def ^{:private true
        :dynamic true}
@@ -18,20 +17,14 @@
 (defmacro with-query [& body]
   `(.append *query* (with-out-str ~@body)))
 
-(defn set-config [key val]
-  (swap! config-data assoc key val))
-
-(defn config [key]
-  (get @config-data key))
-
 (defn- add-line [line]
   (letfn [(has-eol [key]
             (let [conform (str/lower-case (str/trim line))]
-              (.endsWith conform (config key))))
+              (.endsWith conform (c/config key))))
           (find-keyword [key]
             (str/trim
              (subs line 0 (- (count line)
-                             (count (config key))))))]
+                             (count (c/config key))))))]
     (cond (has-eol :line-terminator)
           (do (with-query
                 (print (find-keyword :line-terminator)))
@@ -62,7 +55,7 @@
      (if-not user-input
        (do
          (log/debugf "read EOF from input")
-         (reset! lines-left 0))
+         (end :end-file))
        (let [dir (add-line user-input)]
          (log/tracef "dir: %s" dir)
          (log/tracef "query so far: %s" *query*)
@@ -76,28 +69,22 @@
       {:query (str/trim (.toString *query*))
        :directive @directive})))
 
-(defn- process-query-string [query-string dir-fns]
-  (binding [*std-in* (BufferedReader. (StringReader. query-string))]
-    (let [query-data (read-query)]
-      (log/infof "query: <%s>" (:query query-data))
+(defn process-queries [dir-fns]
+  (loop [query-data (read-query)]
+    (log/tracef "query data: %s" query-data)
+    (log/debugf "query: <%s>" (:query query-data))
+    (when (= :end-query (:directive query-data))
       (if-let [dir-fn (get dir-fns (:directive query-data))]
         (dir-fn query-data)
         (throw (IllegalArgumentException.
-                (str "no mapping for command"
-                     (:command query-data))))))))
+                (str "no mapping for directive: "
+                     (:directive query-data)))))
+      (recur (read-query)))))
 
-(process-query-string
- "select id
-    from annotation an, annotator ar
-    where an.annotator_id = ar.id
-go"
- {:end-query (fn [{query :query}] (println "query: " query))
-  :end-session (fn [_] (println "end session"))})
-
-
-;(set-config :line-terminator ";")
+(defn process-query-string [query-string dir-fns]
+  (binding [*std-in* (BufferedReader. (StringReader. query-string))]
+    (process-queries dir-fns)))
 
 (defn start []
   (log/info "staring loop")
-  (binding [*std-in* (BufferedReader. (InputStreamReader. System/in))]
-    ))
+  (binding [*std-in* (BufferedReader. (InputStreamReader. System/in))]))

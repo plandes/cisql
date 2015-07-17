@@ -7,6 +7,14 @@
             <patternLayout pattern="%c{1}: %m%n"/>
         </console>
 
+        <console name="user-feedback" target="SYSTEM_OUT">
+            <patternLayout pattern="%m%n"/>
+        </console>
+
+        <clojure name="user-feedback-repl">
+	    <patternLayout pattern="%m%n"/>
+        </clojure>
+
         <clojure name="repl">
             <!--patternLayout pattern="%c{1}: %m%n"/-->
 	    <patternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.S}: %c{1}: %m%n"/>
@@ -14,7 +22,12 @@
     </appenders>
 
     <loggers>
-        <logger name="com.zensol.cisql" level="warn"/>
+        <logger name="com.zensol.cisql" level="info" additivity="false">
+            <appenderRef ref="user-feedback-repl"/>
+        </logger>
+
+        <!--logger name="com.zensol.cisql" level="debug"/-->
+
         <root level="warn">
             <appenderRef ref="console"/>
             <appenderRef ref="repl"/>
