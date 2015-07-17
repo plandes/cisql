@@ -7,7 +7,7 @@
   (:import (java.sql SQLException))
   (:require [com.zensol.cisql.conf :as c]))
 
-(def products ["mysql" "postgresql"])
+(def products ["mysql" "postgresql" "sqlite"])
 
 (defn- format-sql-exception [sqlex]
   (when sqlex

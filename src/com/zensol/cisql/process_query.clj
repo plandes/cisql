@@ -73,7 +73,13 @@
       (log/tracef "query data: %s" query-data)
       (log/debugf "query: <%s>" (:query query-data))
       (if-let [dir-fn (get dir-fns (:directive query-data))]
-        (dir-fn query-data)
+        (try
+          (dir-fn query-data)
+          (catch Exception e
+            (let [handler (:exception-handler dir-fns)]
+              (if handler
+                (handler e)
+                (log/error e "Error: " (.toString e))))))
         (throw (IllegalArgumentException.
                 (str "no mapping for directive: "
                      (:directive query-data)))))

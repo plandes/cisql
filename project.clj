@@ -5,9 +5,15 @@
   :codox {:defaults {:doc/format :markdown}
           :output-dir "target/doc/codox"}
   :dependencies [[org.clojure/clojure "1.6.0"]
-                
+
+                 ;; api
                  [org.clojure/java.jdbc "0.3.7"]
+
+                 ;; db drivers
                  [mysql/mysql-connector-java "5.1.35"]
+                 [postgresql/postgresql "9.1-901-1.jdbc4"]
+                 [org.xerial/sqlite-jdbc "3.8.7"]
+                 [org.clojure/data.csv "0.1.2"]
 
                  ;; command line
                  [org.clojure/tools.cli "0.3.1"]

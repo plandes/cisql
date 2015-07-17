@@ -22,7 +22,7 @@
     </appenders>
 
     <loggers>
-        <logger name="com.zensol.cisql" level="info" additivity="false">
+        <logger name="com.zensol.cisql" level="debug" additivity="false">
             <appenderRef ref="user-feedback-repl"/>
         </logger>
 
