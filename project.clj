@@ -25,5 +25,6 @@
                  [org.apache.logging.log4j/log4j-jcl "2.3"]
                  [org.clojure/tools.logging "0.3.1"]
                  [com.zensol/clojappend "1.0.2"]]
-  :profiles {:uberjar {:aot :all}}
+  :profiles {:uberjar {:aot :all}
+             :devel {:jvm-opts ["-Dlog4j.configurationFile=test-resources/log4j2.xml"]}}
   :main com.zensol.cisql.core)
