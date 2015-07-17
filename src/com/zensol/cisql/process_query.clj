@@ -2,7 +2,7 @@
   (:require [clojure.tools.logging :as log]
             [clojure.string :as str])
   (:import (java.io BufferedReader InputStreamReader StringReader))
-  (:require [com.zensol.cisql.conf :as c]
+  (:require [com.zensol.cisql.conf :as conf]
             [com.zensol.cisql.db-access :as db]))
 
 (def ^:dynamic *std-in* nil)
@@ -15,7 +15,7 @@
   #"^\s*cf\s+([^\s]+)\s(.+?)$")
 
 (def ^:private show-variable-pattern
-  #"^\s*sh\s+([^\s]+)\s*$")
+  #"^\s*sh\s+([^\s]+)?\s*$")
 
 (def ^:private toggle-variable-pattern
   #"^\s*tg\s+([^\s]+)\s*$")
@@ -29,20 +29,20 @@
               (if key [(keyword key) val])))
           (show-setting []
             (let [[_ key] (re-find show-variable-pattern line)]
-              (keyword key)))
+              (if key (keyword key))))
           (toggle-setting []
             (let [[_ key] (re-find toggle-variable-pattern line)]
               (keyword key)))
           (has-end-tok [key entire-line?]
             (let [conform (str/lower-case (str/trim line))
-                  val (c/config key)]
+                  val (conf/config key)]
               (if entire-line?
                 (= conform val)
                 (.endsWith conform val))))
           (find-keyword [key]
             (str/trim
              (subs line 0 (- (count line)
-                             (count (c/config key))))))]
+                             (count (conf/config key))))))]
     (cond (has-end-tok :line-terminator false)
           (do (with-query
                 (print (find-keyword :line-terminator)))
@@ -109,24 +109,27 @@
       (if reset
         (reset! line-no 0)
         (do
-          (print (format (c/config :prompt) (swap! line-no inc)))
+          (print (format (conf/config :prompt) (swap! line-no inc)))
           (flush))))))
 
 (defn process-queries [dir-fns]
   (let [prompt-fn (or (get dir-fns :prompt-for-input)
                       (gen-prompt-fn))]
     (letfn [(set-var [[key newval]]
-              (let [oldval (c/config key)]
-                (c/set-config key newval)
+              (let [oldval (conf/config key)]
+                (conf/set-config key newval)
                 (println (format "%s: %s -> %s" (name key) oldval newval)))
               (println))
             (show [key]
-              (println (format "%s: %s" (name key) (c/config key)))
-              (println))
+              (if key
+                (do
+                  (println (format "%s: %s" (name key) (conf/config key)))
+                  (println))
+                (conf/help)))
             (toggle [key]
-              (let [oldval (c/config key)
+              (let [oldval (conf/config key)
                     nextval (not oldval)]
-                (c/set-config key nextval)
+                (conf/set-config key nextval)
                 (println (format "%s: %s -> %s"
                                  (name key) oldval nextval))
                 (println)))]

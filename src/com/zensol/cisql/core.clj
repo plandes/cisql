@@ -1,11 +1,13 @@
 (ns com.zensol.cisql.core
   (:require [clojure.tools.logging :as log]
-            [clojure.java.io :as io])
-  (:require [clojure.tools.cli :refer [parse-opts]]
+            [clojure.java.io :as io]
+            [clojure.tools.cli :refer [parse-opts]]
             [clojure.string :as str]
             [clojure.pprint :only (pprint)])
-  (:require [com.zensol.cisql.event-loop :as el]
-            [com.zensol.cisql.db-access :as db])
+  (:import (java.io BufferedReader InputStreamReader))
+  (:require [com.zensol.cisql.process-query :as query]
+            [com.zensol.cisql.db-access :as db]
+            [com.zensol.cisql.conf :as conf])
   (:import (clojure.lang ExceptionInfo))
   (:gen-class :main true))
 
@@ -22,7 +24,9 @@
     :default "localhost"]
    ["-d" "--database <DB name>" "database name"]
    [nil "--port <number>" "database port"]
-   [nil "--help"]])
+   ["-v" "--version"]
+   [nil "--help"]
+   ])
 
 (defn- map-subproto [name host port-or-nil database]
   (let [portn (or port-or-nil
@@ -61,22 +65,41 @@
   (str "The following errors occurred while parsing your command:\n\n"
        (str/join \newline errors)))
 
+(defn start-event-loop [dbspec]
+  (log/debug "staring loop")
+  (conf/print-help false)
+  (binding [query/*std-in* (BufferedReader. (InputStreamReader. System/in))]
+    (query/process-queries
+     {:end-query #(do (db/execute-query (:query %) dbspec))
+      :end-session (fn [_] (println "exiting..."))
+      :end-file (constantly true)})))
+
 (defn -main [& args]
   (let [{summary :summary opts :options errs :errors}
         (parse-opts args cli-options :in-order true)]
     (try
       (if errs
         (throw (ExceptionInfo. (error-msg errs) {})))
-      (if (:help opts)
-        (do
-          (println summary)
-          (println "Database subprotocols include:" product-list))
-        (let [dbspec (create-db-spec opts)]
-          (log/infof "connecting to %s..." (:subname dbspec))
-          (log/debugf "dbspec: %s" dbspec)
-          (el/start dbspec)))
+      (cond (:help opts)
+            (do
+              (println (conf/format-intro))
+              (println \newline)
+              (println summary)
+              (println \newline)
+              (println "Database subprotocols include:" product-list))
+
+            (:version opts)
+            (println (conf/format-version))
+
+            true
+            (let [dbspec (create-db-spec opts)]
+              (log/infof "connecting to %s..." (:subname dbspec))
+              (log/debugf "dbspec: %s" dbspec)
+              (start-event-loop dbspec)))
       (catch ExceptionInfo e
         (binding [*out* *err*]
           (println (.getMessage e))
           (print \newline)
           (println summary))))))
+
+(-main "--help")

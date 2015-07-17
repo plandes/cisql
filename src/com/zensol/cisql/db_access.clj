@@ -5,13 +5,13 @@
   (:require [clojure.java.jdbc :as jdbc])
   (:import (java.io BufferedReader InputStreamReader StringReader))
   (:import (java.sql SQLException))
-  (:require [com.zensol.cisql.conf :as c]))
+  (:require [com.zensol.cisql.conf :as conf]))
 
 (def products ["mysql" "postgresql" "sqlite"])
 
 (defn- format-sql-exception [sqlex]
   (when sqlex
-    (if-not (c/config :error-long-format)
+    (if-not (conf/config :error-long-format)
       (format "Error: %s" (.getMessage sqlex))
       (format "Error: %s
   state: %s

@@ -28,6 +28,6 @@
                  [org.clojure/tools.logging "0.3.1"]]
   :profiles {:uberjar {:aot :all}
              :dev {:jvm-opts
-                   ["-Dlog4j.configurationFile=test-resources/log4j2.xml"]}
-             :dependencies [[com.zensol/clojappend "1.0.2"]]}
+                   ["-Dlog4j.configurationFile=test-resources/log4j2.xml"]
+                   :dependencies [[com.zensol/clojappend "1.0.2"]]}}
   :main com.zensol.cisql.core)
