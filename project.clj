@@ -4,6 +4,8 @@
             [org.clojars.cvillecsteele/lein-git-version "1.0.3"]]
   :codox {:defaults {:doc/format :markdown}
           :output-dir "target/doc/codox"}
+  :java-source-paths ["src/java"]
+  :javac-options ["-Xlint:unchecked"]
   :dependencies [[org.clojure/clojure "1.6.0"]
 
                  ;; api

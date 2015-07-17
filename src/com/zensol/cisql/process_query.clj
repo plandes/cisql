@@ -11,35 +11,50 @@
        :dynamic true}
   *query* nil)
 
+(def ^:private config-variable-pattern
+  #"^\s*cnf\s+([^\s]+)\s+(.+?)\s*$")
+
 (defmacro with-query [& body]
   `(.append *query* (with-out-str ~@body)))
 
 (defn- add-line [line]
-  (letfn [(has-eol [key]
-            (let [conform (str/lower-case (str/trim line))]
-              (.endsWith conform (c/config key))))
+  (letfn [(has-config-setting []
+            (let [group (re-find config-variable-pattern line)
+                  key (keyword (nth group 1))
+                  val (nth group 2)]
+              (if key [key val])))
+          (has-end-tok [key entire-line?]
+            (let [conform (str/lower-case (str/trim line))
+                  val (c/config key)]
+              (if entire-line?
+                (= conform val)
+                (.endsWith conform val))))
           (find-keyword [key]
             (str/trim
              (subs line 0 (- (count line)
                              (count (c/config key))))))]
-    (cond (has-eol :line-terminator)
+    (cond (has-end-tok :line-terminator false)
           (do (with-query
                 (print (find-keyword :line-terminator)))
-              :end-query)
+              {:dir :end-query})
 
-          (has-eol :end-directive)
+          (has-end-tok :end-directive true)
           (do (with-query
                 (print (find-keyword :end-directive)))
-              :end-session)
+              {:dir :end-session})
+          
+          (has-config-setting)
+          {:dir :setting
+           :settings (has-config-setting)}
 
           :default
           (do (with-query
                 (println line))
-              :continue))))
+              {:dir :continue}))))
 
 (defn- read-query []
   (binding [*query* (StringBuilder.)]
-    (let [lines-left (atom 20)
+    (let [lines-left (atom 60)
           directive (atom nil)]
       (letfn [(end [dir]
                 (log/debugf "query: %s" *query*)
@@ -53,12 +68,14 @@
               (do
                 (log/debugf "read EOF from input")
                 (end :end-file))
-              (let [dir (add-line user-input)]
+              (let [{dir :dir :as ui} (add-line user-input)]
                 (log/tracef "dir: %s" dir)
                 (log/tracef "query so far: %s" *query*)
                 (case dir
                   :end-query (end dir)
                   :end-session (end dir)
+                  :setting (let [[key val] (:settings ui)]
+                             (c/set-config key val))
                   :continue (log/tracef "continue...")
                   :default (throw (IllegalStateException.
                                    (str "unknown directive: " dir)))))))

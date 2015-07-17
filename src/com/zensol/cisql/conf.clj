@@ -5,8 +5,15 @@
          :end-directive "end"
          :error-long-format false}))
 
-(defn set-config [key val]
-  (swap! config-data assoc key val))
+(def ^:private parse-keys
+  #{:error-long-format})
+
+(defn set-config [key value]
+  (let [val (if (and (contains? parse-keys key)
+                     (string? value))
+              (read-string value)
+              value)]
+    (swap! config-data assoc key val)))
 
 (defn config [key]
   (get @config-data key))
