@@ -72,7 +72,7 @@
           (println summary)
           (println "Database subprotocols include:" product-list))
         (let [dbspec (create-db-spec opts)]
-          (log/infof "connecting to %s" (:subname dbspec))
+          (log/infof "connecting to %s..." (:subname dbspec))
           (log/debugf "dbspec: %s" dbspec)
           (el/start dbspec)))
       (catch ExceptionInfo e

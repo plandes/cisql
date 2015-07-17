@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<configuration packages="com.zensol.clojure.log"
-               status="OFF" monitorInterval="5">
+<configuration status="OFF" monitorInterval="5">
     <appenders>
         <console name="console" target="SYSTEM_OUT">
             <patternLayout pattern="%c{1}: %m%n"/>
@@ -17,11 +16,8 @@
             <appenderRef ref="user-feedback"/>
         </logger>
 
-        <!--logger name="com.zensol.cisql" level="debug"/-->
-
         <root level="warn">
             <appenderRef ref="console"/>
-            <appenderRef ref="repl"/>
         </root>
     </loggers>
 </configuration>

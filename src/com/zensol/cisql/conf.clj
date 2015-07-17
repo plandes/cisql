@@ -2,7 +2,8 @@
 
 (def ^:private config-data
   (atom {:line-terminator "go"
-         :end-directive "end"
+         :end-directive "exit"
+         :prompt " %1$s > "
          :error-long-format false}))
 
 (def ^:private parse-keys

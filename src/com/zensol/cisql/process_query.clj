@@ -12,17 +12,27 @@
   *query* nil)
 
 (def ^:private config-variable-pattern
-  #"^\s*cnf\s+([^\s]+)\s+(.+?)\s*$")
+  #"^\s*cf\s+([^\s]+)\s(.+?)$")
+
+(def ^:private show-variable-pattern
+  #"^\s*sh\s+([^\s]+)\s*$")
+
+(def ^:private toggle-variable-pattern
+  #"^\s*tg\s+([^\s]+)\s*$")
 
 (defmacro with-query [& body]
   `(.append *query* (with-out-str ~@body)))
 
 (defn- add-line [line]
-  (letfn [(has-config-setting []
-            (let [group (re-find config-variable-pattern line)
-                  key (keyword (nth group 1))
-                  val (nth group 2)]
-              (if key [key val])))
+  (letfn [(config-setting []
+            (let [[_ key val] (re-find config-variable-pattern line)]
+              (if key [(keyword key) val])))
+          (show-setting []
+            (let [[_ key] (re-find show-variable-pattern line)]
+              (keyword key)))
+          (toggle-setting []
+            (let [[_ key] (re-find toggle-variable-pattern line)]
+              (keyword key)))
           (has-end-tok [key entire-line?]
             (let [conform (str/lower-case (str/trim line))
                   val (c/config key)]
@@ -43,16 +53,24 @@
                 (print (find-keyword :end-directive)))
               {:dir :end-session})
           
-          (has-config-setting)
+          (config-setting)
           {:dir :setting
-           :settings (has-config-setting)}
+           :settings (config-setting)}
+
+          (show-setting)
+          {:dir :show
+           :key (show-setting)}
+
+          (toggle-setting)
+          {:dir :toggle
+           :key (toggle-setting)}
 
           :default
           (do (with-query
                 (println line))
               {:dir :continue}))))
 
-(defn- read-query []
+(defn- read-query [prompt-fn set-var-fn show-var-fn toggle-var-fn]
   (binding [*query* (StringBuilder.)]
     (let [lines-left (atom 60)
           directive (atom nil)]
@@ -62,6 +80,7 @@
                 (reset! directive dir))]
         (while (> @lines-left 0)
           (log/tracef "lines left: %d" @lines-left)
+          (prompt-fn false)
           (let [user-input (.readLine *std-in*)]
             (log/debugf "line: %s" user-input)
             (if-not user-input
@@ -74,8 +93,9 @@
                 (case dir
                   :end-query (end dir)
                   :end-session (end dir)
-                  :setting (let [[key val] (:settings ui)]
-                             (c/set-config key val))
+                  :setting (set-var-fn (:settings ui))
+                  :show (show-var-fn (:key ui))
+                  :toggle (toggle-var-fn (:key ui))
                   :continue (log/tracef "continue...")
                   :default (throw (IllegalStateException.
                                    (str "unknown directive: " dir)))))))
@@ -83,26 +103,50 @@
       {:query (str/trim (.toString *query*))
        :directive @directive})))
 
+(defn- gen-prompt-fn []
+  (let [line-no (atom 0)]
+    (fn [reset]
+      (if reset
+        (reset! line-no 0)
+        (do
+          (print (format (c/config :prompt) (swap! line-no inc)))
+          (flush))))))
+
 (defn process-queries [dir-fns]
-  (let [prompt-fn (get dir-fns :prompt-for-input)]
-    (prompt-fn)
-    (loop [query-data (read-query)]
-      (log/tracef "query data: %s" query-data)
-      (log/debugf "query: <%s>" (:query query-data))
-      (if-let [dir-fn (get dir-fns (:directive query-data))]
-        (try
-          (dir-fn query-data)
-          (catch Exception e
-            (let [handler (:exception-handler dir-fns)]
-              (if handler
-                (handler e)
-                (log/error e "Error: " (.toString e))))))
-        (throw (IllegalArgumentException.
-                (str "no mapping for directive: "
-                     (:directive query-data)))))
-      (when (= :end-query (:directive query-data))
-        (prompt-fn)
-        (recur (read-query))))))
+  (let [prompt-fn (or (get dir-fns :prompt-for-input)
+                      (gen-prompt-fn))]
+    (letfn [(set-var [[key newval]]
+              (let [oldval (c/config key)]
+                (c/set-config key newval)
+                (println (format "%s: %s -> %s" (name key) oldval newval)))
+              (println))
+            (show [key]
+              (println (format "%s: %s" (name key) (c/config key)))
+              (println))
+            (toggle [key]
+              (let [oldval (c/config key)
+                    nextval (not oldval)]
+                (c/set-config key nextval)
+                (println (format "%s: %s -> %s"
+                                 (name key) oldval nextval))
+                (println)))]
+      (loop [query-data (read-query prompt-fn set-var show toggle)]
+        (log/tracef "query data: %s" query-data)
+        (log/debugf "query: <%s>" (:query query-data))
+        (if-let [dir-fn (get dir-fns (:directive query-data))]
+          (try
+            (dir-fn query-data)
+            (prompt-fn true)
+            (catch Exception e
+              (let [handler (:exception-handler dir-fns)]
+                (if handler
+                  (handler e)
+                  (log/error e "Error: " (.toString e))))))
+          (throw (IllegalArgumentException.
+                  (str "no mapping for directive: "
+                       (:directive query-data)))))
+        (when (= :end-query (:directive query-data))
+          (recur (read-query prompt-fn set-var show toggle)))))))
 
 (defn process-query-string [query-string dir-fns]
   (binding [*std-in* (BufferedReader. (StringReader. query-string))]

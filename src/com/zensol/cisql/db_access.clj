@@ -22,6 +22,9 @@
               (.getErrorCode sqlex)
               (.getName (.getClass sqlex))))))
 
+(defn- print-sql-exception [sqlex]
+  (if sqlex (println (format-sql-exception sqlex))))
+
 (defn- format-header [meta]
   (letfn [(fmtlb [strs wd]
             (format (format "%%-%ds" wd) (or strs "NULL")))
@@ -54,14 +57,14 @@
             (let [end (System/currentTimeMillis)
                   wait-time (double (/ (- end start) 1000))
                   rows (.getUpdateCount stmt)]
-              (println (format-sql-exception (.getWarnings stmt)))
+              (print-sql-exception (.getWarnings stmt))
               (.clearWarnings stmt)
               (if (< 0 rows)
                 (println (format "%d row(s) affected (%ss)" rows wait-time)))))]
-        (format-sql-exception (.getWarnings conn))
+        (print-sql-exception (.getWarnings conn))
         (.clearWarnings conn)
         (try
-          (log/infof "executing: <<%s>>" query)
+          (log/infof "executing: %s" query)
           (let [start (System/currentTimeMillis)]
             (if (.execute stmt query)
               (let [rs (.getResultSet stmt)
