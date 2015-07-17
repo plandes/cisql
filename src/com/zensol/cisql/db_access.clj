@@ -4,10 +4,17 @@
   (:use [clojure.pprint :only (pprint print-table)])
   (:require [clojure.java.jdbc :as jdbc])
   (:import (java.io BufferedReader InputStreamReader StringReader))
+  (:import (com.zensol.rsgui ResultSetFrame))
   (:import (java.sql SQLException))
   (:require [com.zensol.cisql.conf :as conf]))
 
 (def products ["mysql" "postgresql" "sqlite"])
+
+(def ^:private result-frame-data (atom nil))
+
+(defn- result-frame []
+  (swap! result-frame-data
+         #(or % (ResultSetFrame. false))))
 
 (defn- format-sql-exception [sqlex]
   (when sqlex
@@ -69,9 +76,14 @@
             (if (.execute stmt query)
               (let [rs (.getResultSet stmt)
                     meta (.getMetaData rs)]
-                (print-table (map #(.getColumnName meta %)
-                                  (range 1 (+ 1 (.getColumnCount meta))))
-                             (slurp-result-set rs meta)))
+                (if (conf/config :gui)
+                  (let [frame (result-frame)]
+                    (.displayResults (.getResultSetPanel frame) rs)
+                    (.pack frame)
+                    (.setVisible frame true))
+                 (print-table (map #(.getColumnName meta %)
+                                   (range 1 (+ 1 (.getColumnCount meta))))
+                              (slurp-result-set rs meta))))
               (pr-row-count start)))
           (catch SQLException e
             (log/error (format-sql-exception e))

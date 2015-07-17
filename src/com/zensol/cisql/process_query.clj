@@ -54,9 +54,9 @@
                 (print (find-keyword :end-directive)))
               {:dir :end-session})
 
-          (has-end-tok :help true)
+          (has-end-tok :help-directive true)
           (do (with-query
-                (print (find-keyword :help)))
+                (print (find-keyword :help-directive)))
               {:dir :help})
           
           (config-setting)
@@ -96,6 +96,8 @@
               (let [{dir :dir :as ui} (add-line user-input)]
                 (log/tracef "dir: %s" dir)
                 (log/tracef "query so far: %s" *query*)
+                (if-not (= :continue dir)
+                  (prompt-fn true))
                 (case dir
                   :help (conf/print-help true)
                   :end-query (end dir)

@@ -70,8 +70,10 @@
   (binding [query/*std-in* (BufferedReader. (InputStreamReader. System/in))]
     (query/process-queries
      {:end-query #(do (db/execute-query (:query %) dbspec))
-      :end-session (fn [_] (println "exiting..."))
-      :end-file (constantly true)})))
+      :end-session (fn [_]
+                     (println "exiting...")
+                     (System/exit 0))
+      :end-file (fn [_] (System/exit 0))})))
 
 (defn -main [& args]
   (let [{summary :summary opts :options errs :errors}

@@ -3,18 +3,19 @@
   (:require [cisql.version :as ver]))
 
 (def ^:private config-data
-  (atom {:line-terminator "go"
-         :end-directive "exit"
+  (atom {:gui false
+         :line-terminator "go"
+         :error-long-format false
          :prompt " %1$s > "
-         :help "help"
-         :error-long-format false}))
+         :end-directive "exit"
+         :help-directive "help"}))
 
 (def ^:private parse-keys
   #{:error-long-format})
 
 (def ^:private key-desc
-  {:line-terminator "tell where to end a query and then send"
-   :end-directive "what to look for when finishing the program"
+  {:gui "whether or not to use a graphical window to display result sets"
+   :line-terminator "tell where to end a query and then send"
    :prompt "a format string for the promp"
    :error-long-format "if true provide more error information"})
 
@@ -22,7 +23,7 @@
   "type 'help' to see a list of commands")
 
 (def ^:private help-commands
-  {:cf "<variable value>  configure (set) a 'variable' to 'value' (ie 'tg gui)"
+  {:cf "<variable value>  configure (set) a 'variable' to 'value' (ie 'tg gui')"
    :sh "[variable]        show 'variable', or show them all if not given"
    :tg "[variable]        toggle a boolean variable"})
 
@@ -36,18 +37,18 @@
 (defn config [key]
   (get @config-data key))
 
-(defn- print-key-values []
+(defn print-key-values []
   (dorun (map (fn [[key val]]
                 (println (format "%s: %s "(name key) val)))
               @config-data)))
 
-(defn- print-key-desc []
+(defn print-key-desc []
   (dorun (map #(println (format "%-20s%s"
                                 (str (name %) ":")
                                 (get key-desc %)))
               (keys key-desc))))
 
-(defn- print-help-commands []
+(defn print-help-commands []
   (dorun (map (fn [[key val]] 
                 (println (format "%s %s"
                                  (name key)
@@ -58,13 +59,16 @@
   (format "v%s " ver/version))
 
 (defn format-intro []
-  (format "Clojure Interactive SQL (cisql) %s (C) Paul Landes 2015"
+  (format "Clojure Interactive SQL (cisql) %s
+(C) Paul Landes 2015
+"
           (format-version)))
 
 (defn print-help [long?]
   (println (format-intro))
   (if-not long? (println help-message))
   (when long?
+    (println "commands:")
     (print-help-commands)
     (println)
     (println "variables:")
