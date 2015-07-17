@@ -46,23 +46,23 @@
                 (reset! lines-left 0)
                 (reset! directive dir))]
         (while (> @lines-left 0)
-   (log/tracef "lines left: %d" @lines-left)
-   (let [user-input (.readLine *std-in*)]
-     (log/debugf "line: %s" user-input)
-     (if-not user-input
-       (do
-         (log/debugf "read EOF from input")
-         (end :end-file))
-       (let [dir (add-line user-input)]
-         (log/tracef "dir: %s" dir)
-         (log/tracef "query so far: %s" *query*)
-         (case dir
-           :end-query (end dir)
-           :end-session (end dir)
-           :continue (log/tracef "continue...")
-           :default (throw (IllegalStateException.
-                            (str "unknown directive: " dir)))))))
-   (swap! lines-left dec)))
+          (log/tracef "lines left: %d" @lines-left)
+          (let [user-input (.readLine *std-in*)]
+            (log/debugf "line: %s" user-input)
+            (if-not user-input
+              (do
+                (log/debugf "read EOF from input")
+                (end :end-file))
+              (let [dir (add-line user-input)]
+                (log/tracef "dir: %s" dir)
+                (log/tracef "query so far: %s" *query*)
+                (case dir
+                  :end-query (end dir)
+                  :end-session (end dir)
+                  :continue (log/tracef "continue...")
+                  :default (throw (IllegalStateException.
+                                   (str "unknown directive: " dir)))))))
+          (swap! lines-left dec)))
       {:query (str/trim (.toString *query*))
        :directive @directive})))
 
