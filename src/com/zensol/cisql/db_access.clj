@@ -7,6 +7,8 @@
   (:import (java.sql SQLException))
   (:require [com.zensol.cisql.conf :as c]))
 
+(def products ["mysql" "postgresql"])
+
 (defn- format-sql-exception [sqlex]
   (when sqlex
     (if-not (c/config :error-long-format)
