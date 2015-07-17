@@ -47,21 +47,31 @@
           result)))))
 
 (defn execute-query [query dbspec]
- (jdbc/with-db-connection [db dbspec]
-   (let [conn (jdbc/db-connection db)
-         stmt (.createStatement conn)]
-     (format-sql-exception (.getWarnings conn))
-     (.clearWarnings conn)
-     (try
-       (log/infof "executing: <<%s>>" query)
-       (if (.execute stmt query)
-         (let [rs (.getResultSet stmt)
-               meta (.getMetaData rs)]
-           (print-table (map #(.getColumnName meta %)
-                             (range 1 (+ 1 (.getColumnCount meta))))
-                        (slurp-result-set rs meta))))
-       (catch SQLException e
-         (log/error (format-sql-exception e))
-         (.cancel stmt))
-       (finally
-         (.close stmt))))))
+  (jdbc/with-db-connection [db dbspec]
+    (let [conn (jdbc/db-connection db)
+          stmt (.createStatement conn)]
+      (letfn [(pr-row-count [start]
+            (let [end (System/currentTimeMillis)
+                  wait-time (double (/ (- end start) 1000))
+                  rows (.getUpdateCount stmt)]
+              (println (format-sql-exception (.getWarnings stmt)))
+              (.clearWarnings stmt)
+              (if (< 0 rows)
+                (println (format "%d row(s) affected (%ss)" rows wait-time)))))]
+        (format-sql-exception (.getWarnings conn))
+        (.clearWarnings conn)
+        (try
+          (log/infof "executing: <<%s>>" query)
+          (let [start (System/currentTimeMillis)]
+            (if (.execute stmt query)
+              (let [rs (.getResultSet stmt)
+                    meta (.getMetaData rs)]
+                (print-table (map #(.getColumnName meta %)
+                                  (range 1 (+ 1 (.getColumnCount meta))))
+                             (slurp-result-set rs meta)))
+              (pr-row-count start)))
+          (catch SQLException e
+            (log/error (format-sql-exception e))
+            (.cancel stmt))
+          (finally
+            (.close stmt)))))))
