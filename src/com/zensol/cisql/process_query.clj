@@ -15,7 +15,7 @@
   #"^\s*cf\s+([^\s]+)\s(.+?)$")
 
 (def ^:private show-variable-pattern
-  #"^\s*sh\s+([^\s]+)?\s*$")
+  #"^\s*sh\s*([^ ]+)?\s*$")
 
 (def ^:private toggle-variable-pattern
   #"^\s*tg\s+([^\s]+)\s*$")
@@ -29,7 +29,8 @@
               (if key [(keyword key) val])))
           (show-setting []
             (let [[_ key] (re-find show-variable-pattern line)]
-              (if key (keyword key))))
+              (if key (keyword key)
+                  (if _ 'show))))
           (toggle-setting []
             (let [[_ key] (re-find toggle-variable-pattern line)]
               (keyword key)))
@@ -52,6 +53,11 @@
           (do (with-query
                 (print (find-keyword :end-directive)))
               {:dir :end-session})
+
+          (has-end-tok :help true)
+          (do (with-query
+                (print (find-keyword :help)))
+              {:dir :help})
           
           (config-setting)
           {:dir :setting
@@ -91,6 +97,7 @@
                 (log/tracef "dir: %s" dir)
                 (log/tracef "query so far: %s" *query*)
                 (case dir
+                  :help (conf/print-help true)
                   :end-query (end dir)
                   :end-session (end dir)
                   :setting (set-var-fn (:settings ui))
@@ -118,21 +125,20 @@
     (letfn [(set-var [[key newval]]
               (let [oldval (conf/config key)]
                 (conf/set-config key newval)
-                (println (format "%s: %s -> %s" (name key) oldval newval)))
-              (println))
+                (println (format "%s: %s -> %s" (name key) oldval newval))))
             (show [key]
-              (if key
-                (do
-                  (println (format "%s: %s" (name key) (conf/config key)))
-                  (println))
-                (conf/help)))
+              (if (= key 'show)
+                (conf/print-key-values)
+                (let [val (conf/config key)]
+                  (println (format "%s: %s" (name key) val))
+                  ;(println (format "Error: no such variable: %s" (name key)))
+                  )))
             (toggle [key]
               (let [oldval (conf/config key)
                     nextval (not oldval)]
                 (conf/set-config key nextval)
                 (println (format "%s: %s -> %s"
-                                 (name key) oldval nextval))
-                (println)))]
+                                 (name key) oldval nextval))))]
       (loop [query-data (read-query prompt-fn set-var show toggle)]
         (log/tracef "query data: %s" query-data)
         (log/debugf "query: <%s>" (:query query-data))

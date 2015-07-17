@@ -1,4 +1,5 @@
 (ns com.zensol.cisql.conf
+  (:require [clojure.string :as str])
   (:require [cisql.version :as ver]))
 
 (def ^:private config-data
@@ -20,6 +21,11 @@
 (def ^:private help-message
   "type 'help' to see a list of commands")
 
+(def ^:private help-commands
+  {:cf "<variable value>  configure (set) a 'variable' to 'value' (ie 'tg gui)"
+   :sh "[variable]        show 'variable', or show them all if not given"
+   :tg "[variable]        toggle a boolean variable"})
+
 (defn set-config [key value]
   (let [val (if (and (contains? parse-keys key)
                      (string? value))
@@ -30,16 +36,36 @@
 (defn config [key]
   (get @config-data key))
 
+(defn- print-key-values []
+  (dorun (map (fn [[key val]]
+                (println (format "%s: %s "(name key) val)))
+              @config-data)))
+
+(defn- print-key-desc []
+  (dorun (map #(println (format "%-20s%s"
+                                (str (name %) ":")
+                                (get key-desc %)))
+              (keys key-desc))))
+
+(defn- print-help-commands []
+  (dorun (map (fn [[key val]] 
+                (println (format "%s %s"
+                                 (name key)
+                                 val)))
+              help-commands)))
+
 (defn format-version []
   (format "v%s " ver/version))
 
 (defn format-intro []
-  (format "Clojure Interactive SQL (cisql) %s (C) Paul Landes 2015" (format-version)))
+  (format "Clojure Interactive SQL (cisql) %s (C) Paul Landes 2015"
+          (format-version)))
 
 (defn print-help [long?]
   (println (format-intro))
-  (println help-message)
+  (if-not long? (println help-message))
   (when long?
-    (println \newline)
-    (dorun (map #(println (format "%-20s: %s" (name %) (get key-desc %)))
-                (keys key-desc)))))
+    (print-help-commands)
+    (println)
+    (println "variables:")
+    (print-key-desc)))

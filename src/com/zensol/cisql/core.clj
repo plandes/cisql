@@ -67,7 +67,6 @@
 
 (defn start-event-loop [dbspec]
   (log/debug "staring loop")
-  (conf/print-help false)
   (binding [query/*std-in* (BufferedReader. (InputStreamReader. System/in))]
     (query/process-queries
      {:end-query #(do (db/execute-query (:query %) dbspec))
@@ -93,6 +92,7 @@
 
             true
             (let [dbspec (create-db-spec opts)]
+              (conf/print-help false)
               (log/infof "connecting to %s..." (:subname dbspec))
               (log/debugf "dbspec: %s" dbspec)
               (start-event-loop dbspec)))
@@ -101,5 +101,3 @@
           (println (.getMessage e))
           (print \newline)
           (println summary))))))
-
-(-main "--help")
