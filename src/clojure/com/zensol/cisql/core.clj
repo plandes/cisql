@@ -7,7 +7,8 @@
   (:import (java.io BufferedReader InputStreamReader))
   (:require [com.zensol.cisql.process-query :as query]
             [com.zensol.cisql.db-access :as db]
-            [com.zensol.cisql.conf :as conf])
+            [com.zensol.cisql.conf :as conf]
+            [com.zensol.cisql.repl :as repl])
   (:import (clojure.lang ExceptionInfo))
   (:gen-class :main true))
 
@@ -18,14 +19,17 @@
   [["-s" "--subprotocol <vender>" "DB implementation"
     :validate [#(contains? (set db/products) %)
                (str "Must be one of: " product-list)]]
-   ["-u" "--user <name>" "login name"]
-   ["-p" "--password <pass>" "login password"]
-   ["-h" "--host <name>" "database host name"
+   ["-u" "--user <string>" "login name"]
+   ["-p" "--password <string>" "login password"]
+   ["-h" "--host <string>" "database host name"
     :default "localhost"]
-   ["-d" "--database <DB name>" "database name"]
-   [nil "--port <number>" "database port"]
+   ["-d" "--database <string>" "database name"]
+   [nil "--port <number>" "database port"
+    :parse-fn #(Integer/parseInt %)
+    :validate [#(< 0 % 0x10000) "Must be a number between 0 and 65536"]]
    ["-c" "--config <key1=val1>[,key2=val2] ..."
     :parse-fn (fn [op] (map #(str/split % #"=") (str/split op #"\s*,\s*")))]
+   [nil "--repl" "start the REPL"]
    ["-v" "--version"]
    [nil "--help"]])
 
@@ -91,6 +95,8 @@
 (defn -main [& args]
   (let [{summary :summary opts :options errs :errors}
         (parse-opts args cli-options :in-order true)]
+    (if (:repl opts)
+      (future (repl/run-server)))
     (try
       (if errs
         (throw (ExceptionInfo. (error-msg errs) {})))

@@ -30,5 +30,7 @@
   :profiles {:uberjar {:aot :all}
              :dev {:jvm-opts
                    ["-Dlog4j.configurationFile=test-resources/log4j2.xml"]
-                   :dependencies [[com.zensol/clojappend "1.0.2"]]}}
+                   :dependencies [[com.zensol/clojappend "1.0.2"]
+                                  [cider/cider-nrepl "0.9.0"]
+                                  [org.clojure/tools.nrepl "0.2.7"]]}}
   :main com.zensol.cisql.core)
