@@ -15,10 +15,13 @@
   #"^\s*cf\s+([^\s]+)\s(.+?)$")
 
 (def ^:private show-variable-pattern
-  #"^\s*sh\s*([^ ]+)?\s*$")
+  #"^\s*sh(?:\s+([^ ]+))?\s*$")
 
 (def ^:private toggle-variable-pattern
   #"^\s*tg\s+([^\s]+)\s*$")
+
+(def ^:private show-tables-pattern
+  #"^\s*shtab(?:\s+([^\s]+))?\s*$")
 
 (defmacro with-query [& body]
   `(.append *query* (with-out-str ~@body)))
@@ -29,11 +32,17 @@
               (if key [(keyword key) val])))
           (show-setting []
             (let [[_ key] (re-find show-variable-pattern line)]
-              (if key (keyword key)
+              (if key
+                (keyword key)
                   (if _ 'show))))
           (toggle-setting []
             (let [[_ key] (re-find toggle-variable-pattern line)]
               (keyword key)))
+          (show-tables []
+            (let [[_ table] (re-find show-tables-pattern line)]
+              (if table
+                table
+               (if _ 'show-all))))
           (has-end-tok [key entire-line?]
             (let [conform (str/lower-case (str/trim line))
                   val (conf/config key)]
@@ -71,12 +80,18 @@
           {:dir :toggle
            :key (toggle-setting)}
 
+          (show-tables)
+          {:dir :show-table
+           :key (show-tables)}
+
           :default
           (do (with-query
                 (println line))
               {:dir :continue}))))
 
-(defn- read-query [prompt-fn set-var-fn show-var-fn toggle-var-fn]
+(defn- read-query [prompt-fn
+                   set-var-fn show-var-fn toggle-var-fn
+                   show-tables-fn]
   (binding [*query* (StringBuilder.)]
     (let [lines-left (atom 60)
           directive (atom nil)]
@@ -104,6 +119,8 @@
                   :end-session (end dir)
                   :setting (set-var-fn (:settings ui))
                   :show (show-var-fn (:key ui))
+                  :show-table (let [table (if (string? (:key ui)) (:key ui))]
+                                (show-tables-fn table))
                   :toggle (toggle-var-fn (:key ui))
                   :continue (log/tracef "continue...")
                   :default (throw (IllegalStateException.
@@ -123,7 +140,8 @@
 
 (defn process-queries [dir-fns]
   (let [prompt-fn (or (get dir-fns :prompt-for-input)
-                      (gen-prompt-fn))]
+                      (gen-prompt-fn))
+        show-tables (:show-tables dir-fns)]
     (letfn [(set-var [[key newval]]
               (let [oldval (conf/config key)]
                 (conf/set-config key newval)
@@ -141,7 +159,7 @@
                 (conf/set-config key nextval)
                 (println (format "%s: %s -> %s"
                                  (name key) oldval nextval))))]
-      (loop [query-data (read-query prompt-fn set-var show toggle)]
+      (loop [query-data (read-query prompt-fn set-var show toggle show-tables)]
         (log/tracef "query data: %s" query-data)
         (log/debugf "query: <%s>" (:query query-data))
         (if-let [dir-fn (get dir-fns (:directive query-data))]
@@ -157,7 +175,7 @@
                   (str "no mapping for directive: "
                        (:directive query-data)))))
         (when (= :end-query (:directive query-data))
-          (recur (read-query prompt-fn set-var show toggle)))))))
+          (recur (read-query prompt-fn set-var show toggle show-tables)))))))
 
 (defn process-query-string [query-string dir-fns]
   (binding [*std-in* (BufferedReader. (StringReader. query-string))]

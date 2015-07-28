@@ -152,21 +152,23 @@ public class ResultSetPanel extends JPanel {
             query, new ScrollableRSTableModel(resultSet), bestLayout);
     }
 
-    public void displayResults(ResultSet rs) throws SQLException {
-        displayResults("", rs);
+    public int displayResults(ResultSet rs) throws SQLException {
+        return displayResults("", rs);
     }
 
-    public void displayResults(ResultSet rs, boolean bestLayout) throws SQLException {
-        displayResults("", rs, bestLayout);
+    public int displayResults(ResultSet rs, boolean bestLayout) throws SQLException {
+        return displayResults("", rs, bestLayout);
     }
 
-    public void displayResults(String query, ResultSet rs) throws SQLException {
-        displayResults(query, rs, false);
+    public int displayResults(String query, ResultSet rs) throws SQLException {
+        return displayResults(query, rs, false);
     }
 
-    public void displayResults(String query, ResultSet rs, boolean bestLayout)
+    public int displayResults(String query, ResultSet rs, boolean bestLayout)
         throws SQLException {
-        displayResults(query, new CachedRSTableModel(rs), bestLayout);
+	CachedRSTableModel model = new CachedRSTableModel(rs);
+        displayResults(query, model, bestLayout);
+	return model.getRowCount();
     }
 
     protected void displayResults(String query, TableModel model,

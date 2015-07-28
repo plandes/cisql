@@ -26,7 +26,8 @@
 (def ^:private help-commands
   {:cf "<variable value>  configure (set) a 'variable' to 'value' (ie 'tg gui')"
    :sh "[variable]        show 'variable', or show them all if not given"
-   :tg "[variable]        toggle a boolean variable"})
+   :tg "[variable]        toggle a boolean variable"
+   :shtab "[table]        show table metdata or all if no table given"})
 
 (defn set-config [key value]
   (log/tracef "%s -> %s" key value)

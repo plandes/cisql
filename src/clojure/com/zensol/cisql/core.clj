@@ -79,13 +79,22 @@
 
 (defn start-event-loop [dbspec]
   (log/debug "staring loop")
-  (binding [query/*std-in* (BufferedReader. (InputStreamReader. System/in))]
-    (query/process-queries
-     {:end-query #(do (db/execute-query (:query %) dbspec))
-      :end-session (fn [_]
-                     (println "exiting...")
-                     (System/exit 0))
-      :end-file (fn [_] (System/exit 0))})))
+  (while true
+    (try
+      (binding [query/*std-in* (BufferedReader. (InputStreamReader. System/in))]
+        (query/process-queries
+         {:end-query #(do (db/execute-query (:query %) dbspec))
+          :end-session (fn [_]
+                         (println "exiting...")
+                         (System/exit 0))
+          :show-tables (fn [table]
+                         (log/infof "table metdata%s"
+                                    (if table (str ": " table) ""))
+                         (db/show-table-metadata table dbspec))
+          :end-file (fn [_] (System/exit 0))}))
+      (catch Exception e
+        (log/error e)
+        (.printStackTrace e)))))
 
 (defn- configure [conf]
   (doseq [[k v] conf]
@@ -114,4 +123,5 @@
         (binding [*out* *err*]
           (println (.getMessage e))
           (print \newline)
-          (println summary))))))
+          (println summary)
+          (System/exit 1))))))

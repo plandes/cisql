@@ -12,6 +12,32 @@
 
 (def ^:private result-frame-data (atom nil))
 
+(def ^:private db-info-data (atom nil))
+
+(defn- db-info
+  "Get the information about the DB.
+  Assume the same spec is passed every time."
+  [dbspec]
+  (swap! db-info-data
+         (fn [data]
+           (if data
+             data
+             (jdbc/with-db-connection [db dbspec]
+               (log/debugf "getting db metadata on %s" dbspec)
+               (let [conn (jdbc/db-connection db)
+                     dbmeta (.getMetaData conn)]
+                 {:user (.getUserName dbmeta)
+                  :url (.getURL dbmeta)}))))))
+
+(defn- db-id-format
+  "Get a string formatted for the DB.
+  Assume we'll get the same DB spec every time."
+  [dbspec]
+  (let [{user :user url :url} (db-info dbspec)]
+    (format "%s@%s"
+            (second (re-find #"^(.*)@.*$" user))
+            (second (re-find #"jdbc:.*?://(.*)$" url)))))
+
 (defn- result-frame []
   (swap! result-frame-data
          #(or % (ResultSetFrame. false))))
@@ -56,18 +82,39 @@
                        (apply merge (map make-row (range 1 (+ 1 cols))))))
           result)))))
 
+(defn display-result-set [rs meta dbspec]
+  (try
+   (if (conf/config :gui)
+     (let [frame (result-frame)
+           row-count (.displayResults (.getResultSetPanel frame) rs true)]
+       (.pack frame)
+       (if-not (.isVisible frame)
+         (.setTitle frame (db-id-format dbspec)))
+       (.setVisible frame true)
+       row-count)
+     (let [rows (slurp-result-set rs meta)]
+       (print-table (map #(.getColumnName meta %)
+                         (range 1 (+ 1 (.getColumnCount meta))))
+                    rows)
+       (count rows)))
+   (finally
+     (try
+       (.close rs)
+       (catch SQLException e
+         (log/error (format-sql-exception e)))))))
+
 (defn execute-query [query dbspec]
   (jdbc/with-db-connection [db dbspec]
     (let [conn (jdbc/db-connection db)
           stmt (.createStatement conn)]
-      (letfn [(pr-row-count [start]
-            (let [end (System/currentTimeMillis)
-                  wait-time (double (/ (- end start) 1000))
-                  rows (.getUpdateCount stmt)]
-              (print-sql-exception (.getWarnings stmt))
-              (.clearWarnings stmt)
-              (if (< 0 rows)
-                (println (format "%d row(s) affected (%ss)" rows wait-time)))))]
+      (letfn [(pr-row-count [start rows]
+                (let [end (System/currentTimeMillis)
+                      wait-time (double (/ (- end start) 1000))]
+                  (print-sql-exception (.getWarnings stmt))
+                  (.clearWarnings stmt)
+                  (if (< 0 rows)
+                    (println (format "%d row(s) affected (%ss)"
+                                     rows wait-time)))))]
         (print-sql-exception (.getWarnings conn))
         (.clearWarnings conn)
         (try
@@ -75,18 +122,26 @@
           (let [start (System/currentTimeMillis)]
             (if (.execute stmt query)
               (let [rs (.getResultSet stmt)
-                    meta (.getMetaData rs)]
-                (if (conf/config :gui)
-                  (let [frame (result-frame)]
-                    (.displayResults (.getResultSetPanel frame) rs)
-                    (.pack frame)
-                    (.setVisible frame true))
-                 (print-table (map #(.getColumnName meta %)
-                                   (range 1 (+ 1 (.getColumnCount meta))))
-                              (slurp-result-set rs meta))))
-              (pr-row-count start)))
+                    meta (.getMetaData rs)
+                    row-count (display-result-set rs meta dbspec)]
+                (when (conf/config :gui)
+                  (pr-row-count start row-count)))
+              (pr-row-count start (.getUpdateCount stmt))))
           (catch SQLException e
             (log/error (format-sql-exception e))
             (.cancel stmt))
           (finally
             (.close stmt)))))))
+
+(defn show-table-metadata
+  ([dbspec]
+   (show-table-metadata nil dbspec))
+  ([table dbspec]
+   (jdbc/with-db-connection [db dbspec]
+     (let [conn (jdbc/db-connection db)
+           dbmeta (.getMetaData conn)
+           rs (if table
+                (.getColumns dbmeta nil nil table "%")
+                (.getTables dbmeta nil nil "%" nil))
+           meta (.getMetaData rs)]
+       (display-result-set rs meta dbspec)))))
