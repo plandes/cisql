@@ -9,6 +9,9 @@
   :javac-options ["-Xlint:unchecked"]
   :dependencies [[org.clojure/clojure "1.6.0"]
 
+                 ;; useful for debugging
+                 [org.clojure/tools.nrepl "0.2.7"]
+
                  ;; api
                  [org.clojure/java.jdbc "0.3.7"]
 
@@ -31,6 +34,5 @@
              :dev {:jvm-opts
                    ["-Dlog4j.configurationFile=test-resources/log4j2.xml"]
                    :dependencies [[com.zensol/clojappend "1.0.2"]
-                                  [cider/cider-nrepl "0.9.0"]
-                                  [org.clojure/tools.nrepl "0.2.7"]]}}
+                                  [cider/cider-nrepl "0.9.0"]]}}
   :main com.zensol.cisql.core)
