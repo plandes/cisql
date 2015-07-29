@@ -15,6 +15,9 @@
                  ;; api
                  [org.clojure/java.jdbc "0.3.7"]
 
+                 ;; gui
+                 [com.zensol.gui/pref "0.0.1"]
+
                  ;; db drivers
                  [mysql/mysql-connector-java "5.1.35"]
                  [postgresql/postgresql "9.1-901-1.jdbc4"]

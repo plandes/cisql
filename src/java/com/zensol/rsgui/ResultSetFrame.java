@@ -5,7 +5,7 @@ import javax.swing.JFrame;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class ResultSetFrame extends JFrame {
+public class ResultSetFrame extends com.zensol.gui.pref.ConfigPrefFrame {
     private ResultSetPanel panel;
 
     public ResultSetFrame() {
@@ -13,7 +13,8 @@ public class ResultSetFrame extends JFrame {
     }
 
     public ResultSetFrame(boolean hasQueryBox) {
-        super("SQL Results");
+	super("resultsframe");
+        setTitle("SQL Results");
         init(hasQueryBox);
     }
 

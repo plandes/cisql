@@ -27,7 +27,8 @@
   {:cf "<variable value>  configure (set) a 'variable' to 'value' (ie 'tg gui')"
    :sh "[variable]        show 'variable', or show them all if not given"
    :tg "[variable]        toggle a boolean variable"
-   :shtab "[table]        show table metdata or all if no table given"})
+   :shtab "[table]        show table metdata or all if no table given"
+   :orph "[label]         orphan (spawn new next) window in GUI mode"})
 
 (defn set-config [key value]
   (log/tracef "%s -> %s" key value)

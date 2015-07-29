@@ -97,13 +97,12 @@ public class ResultSetPanel extends JPanel {
         if (hasQueryBox) {
             height = table.getPreferredSize().height + QUERY_PANEL_HEIGHT;
         } else {
-            height = table.getPreferredSize().height+ 20;
+            height = table.getPreferredSize().height + 20;
         }
 
         // use 100 for windows task bar, OSX menu bar, etc
         height = Math.min(screenSize.height - SCREEN_HEIGHT_FUDGE, height);
         width = Math.min(screenSize.width - SCREEN_WIDTH_FUDGE, width);
-
 
         return new Dimension(width, height);
     }

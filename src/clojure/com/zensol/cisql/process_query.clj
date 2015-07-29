@@ -23,6 +23,10 @@
 (def ^:private show-tables-pattern
   #"^\s*shtab(?:\s+([^\s]+))?\s*$")
 
+(def ^:private orphan-pattern
+  #"^\s*orph(?:\s+([^\s]+))?\s*$")
+
+
 (defmacro with-query [& body]
   `(.append *query* (with-out-str ~@body)))
 
@@ -43,6 +47,11 @@
               (if table
                 table
                (if _ 'show-all))))
+          (orphan-frame []
+            (let [[_ table] (re-find orphan-pattern line)]
+              (if table
+                table
+                (if _ 'default-label))))
           (has-end-tok [key entire-line?]
             (let [conform (str/lower-case (str/trim line))
                   val (conf/config key)]
@@ -84,14 +93,16 @@
           {:dir :show-table
            :key (show-tables)}
 
+          (orphan-frame)
+          {:dir :orphan-frame
+           :key (orphan-frame)}
+
           :default
           (do (with-query
                 (println line))
               {:dir :continue}))))
 
-(defn- read-query [prompt-fn
-                   set-var-fn show-var-fn toggle-var-fn
-                   show-tables-fn]
+(defn- read-query [prompt-fn set-var-fn show-var-fn toggle-var-fn]
   (binding [*query* (StringBuilder.)]
     (let [lines-left (atom 60)
           directive (atom nil)]
@@ -120,7 +131,9 @@
                   :setting (set-var-fn (:settings ui))
                   :show (show-var-fn (:key ui))
                   :show-table (let [table (if (string? (:key ui)) (:key ui))]
-                                (show-tables-fn table))
+                                (db/show-table-metadata table))
+                  :orphan-frame (let [label (if (string? (:key ui)) (:key ui))]
+                                   (db/orphan-frame label))
                   :toggle (toggle-var-fn (:key ui))
                   :continue (log/tracef "continue...")
                   :default (throw (IllegalStateException.
@@ -140,8 +153,7 @@
 
 (defn process-queries [dir-fns]
   (let [prompt-fn (or (get dir-fns :prompt-for-input)
-                      (gen-prompt-fn))
-        show-tables (:show-tables dir-fns)]
+                      (gen-prompt-fn))]
     (letfn [(set-var [[key newval]]
               (let [oldval (conf/config key)]
                 (conf/set-config key newval)
@@ -159,7 +171,7 @@
                 (conf/set-config key nextval)
                 (println (format "%s: %s -> %s"
                                  (name key) oldval nextval))))]
-      (loop [query-data (read-query prompt-fn set-var show toggle show-tables)]
+      (loop [query-data (read-query prompt-fn set-var show toggle)]
         (log/tracef "query data: %s" query-data)
         (log/debugf "query: <%s>" (:query query-data))
         (if-let [dir-fn (get dir-fns (:directive query-data))]
@@ -175,7 +187,7 @@
                   (str "no mapping for directive: "
                        (:directive query-data)))))
         (when (= :end-query (:directive query-data))
-          (recur (read-query prompt-fn set-var show toggle show-tables)))))))
+          (recur (read-query prompt-fn set-var show toggle)))))))
 
 (defn process-query-string [query-string dir-fns]
   (binding [*std-in* (BufferedReader. (StringReader. query-string))]
