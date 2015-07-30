@@ -19,7 +19,7 @@ public class ScrollableRSTableModel
 
         columns = new String[cols];
         for(int i = 0; i < cols; i++) {
-            columns[i] = meta.getColumnName(i + 1);
+            columns[i] = meta.getColumnLabel(i + 1);
         }
 
         rs.last();

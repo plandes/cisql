@@ -99,7 +99,7 @@
 
 (defn- slurp-result-set [rs meta]
   (letfn [(make-row [col]
-            {(.getColumnName meta col) (.getString rs col)})]
+            {(.getColumnLabel meta col) (.getString rs col)})]
     (let [cols (.getColumnCount meta)]
       (loop [result []]
         (if (.next rs)
@@ -118,7 +118,7 @@
        (.setVisible frame true)
        row-count)
      (let [rows (slurp-result-set rs meta)]
-       (print-table (map #(.getColumnName meta %)
+       (print-table (map #(.getColumnLabel meta %)
                          (range 1 (+ 1 (.getColumnCount meta))))
                     rows)
        (count rows)))
