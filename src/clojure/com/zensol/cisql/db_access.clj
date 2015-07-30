@@ -97,20 +97,6 @@
 (defn- print-sql-exception [sqlex]
   (if sqlex (println (format-sql-exception sqlex))))
 
-(defn- format-header [meta]
-  (letfn [(fmtlb [strs wd]
-            (format (format "%%-%ds" wd) (or strs "NULL")))
-          (fmtsep [wd]
-            (format (format "%%-%ds" wd) "NULL"))]
-    (let [cols (.getColumnCount meta)]
-      (doseq [col (range 1 (+ 1 cols))]
-        (let [type (.getColumnTypeName meta col)
-              size (.getColumnDisplaySize meta col)]
-          (log/debugf "type: %s, size: %s" type size)
-          (print (fmtlb type size))
-          (print (fmtsep size)))))
-    (println)))
-
 (defn- slurp-result-set [rs meta]
   (letfn [(make-row [col]
             {(.getColumnName meta col) (.getString rs col)})]
