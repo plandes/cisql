@@ -3,7 +3,8 @@
             [clojure.string :as str])
   (:import (java.io BufferedReader InputStreamReader StringReader))
   (:require [com.zensol.cisql.conf :as conf]
-            [com.zensol.cisql.db-access :as db]))
+            [com.zensol.cisql.db-access :as db]
+            [com.zensol.cisql.log4j-util :as lu]))
 
 (def ^:dynamic *std-in* nil)
 
@@ -102,6 +103,14 @@
                 (println line))
               {:dir :continue}))))
 
+(defn- maybe-set-log-level []
+  (let [level (conf/config :loglev)]
+    (when level
+      (try
+        (lu/change-log-level level)
+        (catch Exception e
+          (log/errorf "Can't set log level: %s" (.getMessage e)))))))
+
 (defn- read-query [prompt-fn set-var-fn show-var-fn toggle-var-fn]
   (binding [*query* (StringBuilder.)]
     (let [lines-left (atom 60)
@@ -174,6 +183,7 @@
       (loop [query-data (read-query prompt-fn set-var show toggle)]
         (log/tracef "query data: %s" query-data)
         (log/debugf "query: <%s>" (:query query-data))
+        (maybe-set-log-level)
         (if-let [dir-fn (get dir-fns (:directive query-data))]
           (try
             (dir-fn query-data)

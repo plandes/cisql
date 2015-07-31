@@ -120,7 +120,7 @@
      (let [rows (slurp-result-set rs meta)]
        (print-table (map #(.getColumnLabel meta %)
                          (range 1 (+ 1 (.getColumnCount meta))))
-                    rows)
+                    (if (empty? rows) [{}] rows))
        (count rows)))
    (finally
      (try
