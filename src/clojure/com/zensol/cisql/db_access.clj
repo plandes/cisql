@@ -29,6 +29,7 @@
 
 (defn set-catalog [catalog]
   (reset! current-catalog catalog)
+  (reset! dbspec nil)
   (log/infof "set catalog: %s" catalog))
 
 ;; db metadata
