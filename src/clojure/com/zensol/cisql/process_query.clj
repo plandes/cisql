@@ -27,6 +27,9 @@
 (def ^:private orphan-pattern
   #"^\s*orph(?:\s+([^\s]+))?\s*$")
 
+(def ^:private config-catalog-pattern
+  #"^\s*cfcat\s+([^\s]+)\s*$")
+
 
 (defmacro with-query [& body]
   `(.append *query* (with-out-str ~@body)))
@@ -53,6 +56,9 @@
               (if table
                 table
                 (if _ 'default-label))))
+          (config-catalog []
+            (let [[_ catalog] (re-find config-catalog-pattern line)]
+              catalog))
           (has-end-tok [key entire-line?]
             (let [conform (str/lower-case (str/trim line))
                   val (conf/config key)]
@@ -97,6 +103,10 @@
           (orphan-frame)
           {:dir :orphan-frame
            :key (orphan-frame)}
+
+          (config-catalog)
+          {:dir :config-catalog
+           :catalog (config-catalog)}
 
           :default
           (do (with-query
@@ -143,6 +153,7 @@
                                 (db/show-table-metadata table))
                   :orphan-frame (let [label (if (string? (:key ui)) (:key ui))]
                                    (db/orphan-frame label))
+                  :config-catalog (db/set-catalog (:catalog ui))
                   :toggle (toggle-var-fn (:key ui))
                   :continue (log/tracef "continue...")
                   :default (throw (IllegalStateException.

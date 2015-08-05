@@ -13,12 +13,23 @@
 
 (def ^:private dbspec (atom nil))
 
+(def ^:private current-catalog (atom nil))
+
 (def ^:private result-frame-data (atom nil))
 
 (def ^:private db-info-data (atom nil))
 
 (def ^:private last-frame-label (atom nil))
 
+(defn- resolve-connection [db]
+  (let [conn (jdbc/db-connection db)
+        catalog @current-catalog]
+    (if catalog (.setCatalog conn catalog))
+    conn))
+
+(defn set-catalog [catalog]
+  (reset! current-catalog catalog)
+  (log/infof "set catalog: %s" catalog))
 
 ;; db metadata
 (defn- db-info
@@ -30,7 +41,7 @@
              data
              (jdbc/with-db-connection [db @dbspec]
                (log/debugf "getting db metadata on %s" @dbspec)
-               (let [conn (jdbc/db-connection db)
+               (let [conn (resolve-connection db)
                      dbmeta (.getMetaData conn)]
                  {:user (.getUserName dbmeta)
                   :url (.getURL dbmeta)}))))))
@@ -130,7 +141,7 @@
 
 (defn execute-query [query]
   (jdbc/with-db-connection [db @dbspec]
-    (let [conn (jdbc/db-connection db)
+    (let [conn (resolve-connection db)
           stmt (.createStatement conn)]
       (letfn [(pr-row-count [start rows]
                 (let [end (System/currentTimeMillis)
@@ -164,7 +175,7 @@
    (show-table-metadata nil))
   ([table]
    (jdbc/with-db-connection [db @dbspec]
-     (let [conn (jdbc/db-connection db)
+     (let [conn (resolve-connection db)
            dbmeta (.getMetaData conn)
            rs (if table
                 (.getColumns dbmeta nil nil table "%")
