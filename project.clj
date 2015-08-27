@@ -16,7 +16,7 @@
                  [org.clojure/java.jdbc "0.3.7"]
 
                  ;; gui
-                 [com.zensol.gui/pref "0.0.1"]
+                 [com.zensol/rsgui "0.0.1"]
 
                  ;; db drivers
                  [mysql/mysql-connector-java "5.1.35"]

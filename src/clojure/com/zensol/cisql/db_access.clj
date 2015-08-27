@@ -7,6 +7,7 @@
   (:import (java.sql SQLException))
   (:import (com.zensol.rsgui ResultSetFrame))
   (:import (com.zensol.gui.pref ConfigPrefFrame PrefsListener PrefSupport))
+  (:require [com.zensol.rsgui.display-results :as dis])
   (:require [com.zensol.cisql.conf :as conf]))
 
 (def products ["mysql" "postgresql" "sqlite"])
@@ -14,8 +15,6 @@
 (def ^:private dbspec (atom nil))
 
 (def ^:private current-catalog (atom nil))
-
-(def ^:private result-frame-data (atom nil))
 
 (def ^:private db-info-data (atom nil))
 
@@ -63,33 +62,17 @@
   (reset! dbspec spec))
 
 ;; gui
-(defn- new-frame []
-  (swap! result-frame-data
-         (fn [frame]
-           (when frame
-             (.dispose frame))
-           (let [frame (ResultSetFrame. false)]
-             (.init frame)
-             (.pack frame)
-             frame))))
-
-(defn- result-frame []
-  (swap! result-frame-data #(or % (new-frame))))
-
 (defn orphan-frame
   ([]
    (orphan-frame nil))
   ([label]
-   (swap! result-frame-data
-          (fn [frame]
-            (when frame
-              (.setDefaultCloseOperation
-               frame javax.swing.WindowConstants/DISPOSE_ON_CLOSE)
-              (.setEnabled (.getPrefSupport frame) false)
-              (.setTitle frame (format "%s: %s"
-                                       (db-id-format {:user? false})
-                                       (or label @last-frame-label))))
-            nil))))
+   (binding [dis/frame-config-fn
+             (fn [frame title orphaned?]
+               (.setTitle frame
+                          (format "%s: %s"
+                                  (db-id-format {:user? false})
+                                  (or title @last-frame-label))))]
+     (dis/orphan-frame label))))
 
 (defn- format-sql-exception [sqlex]
   (when sqlex
@@ -103,7 +86,6 @@
               (.getSQLState sqlex)
               (.getErrorCode sqlex)
               (.getName (.getClass sqlex))))))
-
 
 ;; error
 (defn- print-sql-exception [sqlex]
@@ -121,24 +103,24 @@
 
 (defn- display-result-set [rs meta]
   (try
-   (if (conf/config :gui)
-     (let [frame (result-frame)
-           row-count (.displayResults (.getResultSetPanel frame) rs true)]
-       (.pack frame)
-       (if-not (.isVisible frame)
-         (.setTitle frame (db-id-format)))
-       (.setVisible frame true)
-       row-count)
-     (let [rows (slurp-result-set rs meta)]
-       (print-table (map #(.getColumnLabel meta %)
-                         (range 1 (+ 1 (.getColumnCount meta))))
-                    (if (empty? rows) [{}] rows))
-       (count rows)))
-   (finally
-     (try
-       (.close rs)
-       (catch SQLException e
-         (log/error (format-sql-exception e)))))))
+    (if (conf/config :gui)
+      (binding [dis/frame-factory-fn (fn []
+                                       (let [frame (ResultSetFrame. false)]
+                                         (.init frame)
+                                         frame))]
+        (dis/display-results (fn [frame]
+                               (.displayResults (.getResultSetPanel frame) rs true))
+                             :title (db-id-format)))
+      (let [rows (slurp-result-set rs meta)]
+        (print-table (map #(.getColumnLabel meta %)
+                          (range 1 (+ 1 (.getColumnCount meta))))
+                     (if (empty? rows) [{}] rows))
+        (count rows)))
+    (finally
+      (try
+        (.close rs)
+        (catch SQLException e
+          (log/error (format-sql-exception e)))))))
 
 (defn execute-query [query]
   (jdbc/with-db-connection [db @dbspec]
