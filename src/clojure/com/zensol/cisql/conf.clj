@@ -30,7 +30,8 @@
    :tg "[variable]        toggle a boolean variable"
    :shtab "[table]        show table metdata or all if no table given"
    :orph "[label]         orphan (spawn new next) window in GUI mode"
-   :cfcat "[catalog]      configure (set) the database (like 'use <db name>')"})
+   :cfcat "[catalog]      configure (set) the database (like 'use <db name>')"
+   :export "[filename]    export the last query as a CSV file"})
 
 (defn set-config [key value]
   (log/tracef "%s -> %s" key value)
