@@ -12,24 +12,6 @@
        :dynamic true}
   *query* nil)
 
-(def ^:private config-variable-pattern
-  #"^\s*cf\s+([^\s]+)\s(.+?)$")
-
-(def ^:private show-variable-pattern
-  #"^\s*sh(?:\s+([^ ]+))?\s*$")
-
-(def ^:private toggle-variable-pattern
-  #"^\s*tg\s+([^\s]+)\s*$")
-
-(def ^:private show-tables-pattern
-  #"^\s*shtab(?:\s+([^\s]+))?\s*$")
-
-(def ^:private orphan-pattern
-  #"^\s*orph(?:\s+([^\s]+))?\s*$")
-
-(def ^:private config-catalog-pattern
-  #"^\s*cfcat\s+([^\s]+)\s*$")
-
 (def ^:private input-rules
   '([has-end-tok :linesep false :end-query]
     [has-end-tok :end-directive true :end-session]
@@ -64,13 +46,13 @@
       {:dir directive})))
 
 (defn- config-setting [line]
-  (let [[_ key val] (re-find config-variable-pattern line)]
+  (let [[_ key val] (re-find #"^\s*cf\s+([^\s]+)\s(.+?)$" line)]
     (if key
       {:dir :setting
        :settings [(keyword key) val]})))
 
 (defn- show-setting [line]
-  (let [[_ key] (re-find show-variable-pattern line)]
+  (let [[_ key] (re-find #"^\s*sh(?:\s+([^ ]+))?\s*$" line)]
     (if _
      {:dir :show
       :key (if key
@@ -78,13 +60,13 @@
              'show)})))
 
 (defn- toggle-setting [line]
-  (let [[_ key] (re-find toggle-variable-pattern line)]
+  (let [[_ key] (re-find #"^\s*tg\s+([^\s]+)\s*$" line)]
     (if key
      {:dir :toggle
       :key (keyword key)})))
 
 (defn- show-tables [line]
-  (let [[_ table] (re-find show-tables-pattern line)]
+  (let [[_ table] (re-find #"^\s*shtab(?:\s+([^\s]+))?\s*$" line)]
     (if _
      {:dir :show-table
       :key (if table
@@ -92,7 +74,7 @@
              (if _ 'show-all))})))
 
 (defn- orphan-frame [line]
-  (let [[_ table] (re-find orphan-pattern line)]
+  (let [[_ table] (re-find #"^\s*orph(?:\s+([^\s]+))?\s*$" line)]
     (if _
       {:dir :orphan-frame
        :key (if table
@@ -100,7 +82,7 @@
               (if _ 'default-label))})))
 
 (defn- config-catalog [line]
-  (let [[_ catalog] (re-find config-catalog-pattern line)]
+  (let [[_ catalog] (re-find #"^\s*cfcat\s+([^\s]+)\s*$" line)]
     (if _
      {:dir :config-catalog
       :catalog catalog})))
