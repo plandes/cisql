@@ -7,6 +7,8 @@
   :source-paths ["src/clojure"]
   :java-source-paths ["src/java"]
   :javac-options ["-Xlint:unchecked"]
+  :repositories [["releases"
+                  {:url "dav:https://lngr.org:4555/mavenrepo/"}]]
   :dependencies [[org.clojure/clojure "1.6.0"]
 
                  ;; useful for debugging

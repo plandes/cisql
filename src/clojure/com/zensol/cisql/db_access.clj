@@ -5,7 +5,7 @@
   (:require [clojure.java.jdbc :as jdbc])
   (:import (java.io BufferedReader InputStreamReader StringReader))
   (:import (java.sql SQLException))
-  (:import (com.zensol.rsgui ResultSetFrame))
+  (:import (com.zensol.gui.rs ResultSetFrame))
   (:import (com.zensol.gui.pref ConfigPrefFrame PrefsListener PrefSupport))
   (:require [com.zensol.rsgui.display-results :as dis])
   (:require [com.zensol.cisql.conf :as conf]))
