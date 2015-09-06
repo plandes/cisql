@@ -30,88 +30,96 @@
 (def ^:private config-catalog-pattern
   #"^\s*cfcat\s+([^\s]+)\s*$")
 
+(def ^:private input-rules
+  '([has-end-tok :linesep false :end-query]
+    [has-end-tok :end-directive true :end-session]
+    [has-end-tok :help-directive true :help]
+    [config-setting]
+    [show-setting]
+    [toggle-setting]
+    [show-tables]
+    [orphan-frame]
+    [config-catalog]
+    (fn [line]
+      (with-query (println line))
+      {:dir :continue})))
 
 (defmacro with-query [& body]
   `(.append *query* (with-out-str ~@body)))
 
+(defn- parse-keyword [line key]
+  (str/trim
+   (subs line 0 (- (count line)
+                   (count (conf/config key))))))
+
+(defn- has-end-tok [line key entire-line? directive]
+  (let [conform (str/lower-case (str/trim line))
+        val (conf/config key)
+        found? (if entire-line?
+                 (= conform val)
+                 (.endsWith conform val))]
+    (when found?
+      (with-query
+        (print (parse-keyword line key)))
+      {:dir directive})))
+
+(defn- config-setting [line]
+  (let [[_ key val] (re-find config-variable-pattern line)]
+    (if key
+      {:dir :setting
+       :settings [(keyword key) val]})))
+
+(defn- show-setting [line]
+  (let [[_ key] (re-find show-variable-pattern line)]
+    (if _
+     {:dir :show
+      :key (if key
+             (keyword key)
+             'show)})))
+
+(defn- toggle-setting [line]
+  (let [[_ key] (re-find toggle-variable-pattern line)]
+    (if key
+     {:dir :toggle
+      :key (keyword key)})))
+
+(defn- show-tables [line]
+  (let [[_ table] (re-find show-tables-pattern line)]
+    (if _
+     {:dir :show-table
+      :key (if table
+             table
+             (if _ 'show-all))})))
+
+(defn- orphan-frame [line]
+  (let [[_ table] (re-find orphan-pattern line)]
+    (if _
+      {:dir :orphan-frame
+       :key (if table
+              table
+              (if _ 'default-label))})))
+
+(defn- config-catalog [line]
+  (let [[_ catalog] (re-find config-catalog-pattern line)]
+    (if _
+     {:dir :config-catalog
+      :catalog catalog})))
+
 (defn- add-line [line]
-  (letfn [(config-setting []
-            (let [[_ key val] (re-find config-variable-pattern line)]
-              (if key [(keyword key) val])))
-          (show-setting []
-            (let [[_ key] (re-find show-variable-pattern line)]
-              (if key
-                (keyword key)
-                  (if _ 'show))))
-          (toggle-setting []
-            (let [[_ key] (re-find toggle-variable-pattern line)]
-              (keyword key)))
-          (show-tables []
-            (let [[_ table] (re-find show-tables-pattern line)]
-              (if table
-                table
-               (if _ 'show-all))))
-          (orphan-frame []
-            (let [[_ table] (re-find orphan-pattern line)]
-              (if table
-                table
-                (if _ 'default-label))))
-          (config-catalog []
-            (let [[_ catalog] (re-find config-catalog-pattern line)]
-              catalog))
-          (has-end-tok [key entire-line?]
-            (let [conform (str/lower-case (str/trim line))
-                  val (conf/config key)]
-              (if entire-line?
-                (= conform val)
-                (.endsWith conform val))))
-          (find-keyword [key]
-            (str/trim
-             (subs line 0 (- (count line)
-                             (count (conf/config key))))))]
-    (cond (has-end-tok :linesep false)
-          (do (with-query
-                (print (find-keyword :linesep)))
-              {:dir :end-query})
-
-          (has-end-tok :end-directive true)
-          (do (with-query
-                (print (find-keyword :end-directive)))
-              {:dir :end-session})
-
-          (has-end-tok :help-directive true)
-          (do (with-query
-                (print (find-keyword :help-directive)))
-              {:dir :help})
-          
-          (config-setting)
-          {:dir :setting
-           :settings (config-setting)}
-
-          (show-setting)
-          {:dir :show
-           :key (show-setting)}
-
-          (toggle-setting)
-          {:dir :toggle
-           :key (toggle-setting)}
-
-          (show-tables)
-          {:dir :show-table
-           :key (show-tables)}
-
-          (orphan-frame)
-          {:dir :orphan-frame
-           :key (orphan-frame)}
-
-          (config-catalog)
-          {:dir :config-catalog
-           :catalog (config-catalog)}
-
-          :default
-          (do (with-query
-                (println line))
-              {:dir :continue}))))
+  (let [org-ns (ns-name *ns*)]
+    (try
+      ;; we have to set the namespace so resolve works in the REPL (namespace
+      ;; is `user' otherwise)
+      (in-ns 'com.zensol.cisql.process-query)
+      (some (fn [entry]
+              (if (and (seq? entry)
+                       (= 'fn (first entry)))
+                (eval (list entry line))
+                (let [directive-fn (resolve (first entry))
+                      params (cons line (rest entry))]
+                  (apply directive-fn params))))
+            input-rules)
+      (finally (in-ns org-ns)))))
 
 (defn- maybe-set-log-level []
   (let [level (conf/config :loglev)]
