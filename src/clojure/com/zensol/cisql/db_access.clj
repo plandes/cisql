@@ -101,57 +101,70 @@
                        (apply merge (map make-row (range 1 (+ 1 cols))))))
           result)))))
 
+(defn result-set-to-array [rs]
+  (let [meta (.getMetaData rs)
+        rows (slurp-result-set rs meta)]
+    {:header (map #(.getColumnLabel meta %)
+                  (range 1 (+ 1 (.getColumnCount meta))))
+     :rows (if (empty? rows) [{}] rows)}))
+
 (defn- display-result-set [rs meta]
   (try
     (if (conf/config :gui)
-      (binding [dis/frame-factory-fn (fn []
-                                       (let [frame (ResultSetFrame. false)]
-                                         (.init frame)
-                                         frame))]
-        (dis/display-results (fn [frame]
-                               (.displayResults (.getResultSetPanel frame) rs true))
+      (binding [dis/frame-factory-fn
+                (fn []
+                  (let [frame (ResultSetFrame. false)]
+                    (.init frame)
+                    frame))]
+        (dis/display-results
+         (fn [frame]
+           (.displayResults (.getResultSetPanel frame)
+                            rs true))
                              :title (db-id-format)))
-      (let [rows (slurp-result-set rs meta)]
-        (print-table (map #(.getColumnLabel meta %)
-                          (range 1 (+ 1 (.getColumnCount meta))))
-                     (if (empty? rows) [{}] rows))
-        (count rows)))
+      (let [rs-data (result-set-to-array rs)]
+        (print-table (:header rs-data) (:rows rs-data))
+        (count (:rows rs-data))))
     (finally
       (try
         (.close rs)
         (catch SQLException e
           (log/error (format-sql-exception e)))))))
 
-(defn execute-query [query]
-  (jdbc/with-db-connection [db @dbspec]
-    (let [conn (resolve-connection db)
-          stmt (.createStatement conn)]
-      (letfn [(pr-row-count [start rows]
-                (let [end (System/currentTimeMillis)
-                      wait-time (double (/ (- end start) 1000))]
-                  (print-sql-exception (.getWarnings stmt))
-                  (.clearWarnings stmt)
-                  (if (< 0 rows)
-                    (println (format "%d row(s) affected (%ss)"
-                                     rows wait-time)))))]
-        (print-sql-exception (.getWarnings conn))
-        (.clearWarnings conn)
-        (try
-          (log/infof "executing: %s" query)
-          (let [start (System/currentTimeMillis)]
-            (if (.execute stmt query)
-              (let [rs (.getResultSet stmt)
-                    meta (.getMetaData rs)
-                    row-count (display-result-set rs meta)]
-                (when (conf/config :gui)
-                  (pr-row-count start row-count)))
-              (pr-row-count start (.getUpdateCount stmt))))
-          (reset! last-frame-label query)
-          (catch SQLException e
-            (log/error (format-sql-exception e))
-            (.cancel stmt))
-          (finally
-            (.close stmt)))))))
+(defn execute-query
+  ([query]
+   (execute-query query nil))
+  ([query query-handler-fn]
+   (jdbc/with-db-connection [db @dbspec]
+     (let [conn (resolve-connection db)
+           stmt (.createStatement conn)]
+       (letfn [(pr-row-count [start rows]
+                 (let [end (System/currentTimeMillis)
+                       wait-time (double (/ (- end start) 1000))]
+                   (print-sql-exception (.getWarnings stmt))
+                   (.clearWarnings stmt)
+                   (if (< 0 rows)
+                     (println (format "%d row(s) affected (%ss)"
+                                      rows wait-time)))))]
+         (print-sql-exception (.getWarnings conn))
+         (.clearWarnings conn)
+         (try
+           (log/infof "executing: %s" query)
+           (let [start (System/currentTimeMillis)]
+             (if (.execute stmt query)
+               (let [rs (.getResultSet stmt)
+                     meta (.getMetaData rs)]
+                 (if query-handler-fn
+                   (pr-row-count start (query-handler-fn rs))
+                   (let [row-count (display-result-set rs meta)]
+                     (when (conf/config :gui)
+                       (pr-row-count start row-count)))))
+               (pr-row-count start (.getUpdateCount stmt))))
+           (reset! last-frame-label query)
+           (catch SQLException e
+             (log/error (format-sql-exception e))
+             (.cancel stmt))
+           (finally
+             (.close stmt))))))))
 
 (defn show-table-metadata
   ([]

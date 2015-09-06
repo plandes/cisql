@@ -4,6 +4,7 @@
   (:import (java.io BufferedReader InputStreamReader StringReader))
   (:require [com.zensol.cisql.conf :as conf]
             [com.zensol.cisql.db-access :as db]
+            [com.zensol.cisql.table-export :as te]
             [com.zensol.cisql.log4j-util :as lu]))
 
 (def ^:dynamic *std-in* nil)
@@ -11,6 +12,8 @@
 (def ^{:private true
        :dynamic true}
   *query* nil)
+
+(def ^:private last-query (atom nil))
 
 (def ^:private input-rules
   '([has-end-tok :linesep false :end-query]
@@ -22,6 +25,7 @@
     [show-tables]
     [orphan-frame]
     [config-catalog]
+    [export-csv]
     (fn [line]
       (with-query (println line))
       {:dir :continue})))
@@ -87,6 +91,12 @@
      {:dir :config-catalog
       :catalog catalog})))
 
+(defn- export-csv [line]
+  (let [[_ filename] (re-find #"^\s*export\s+([^\s]+)\s*$" line)]
+    (if _
+     {:dir :export-csv
+      :filename filename})))
+
 (defn- add-line [line]
   (let [org-ns (ns-name *ns*)]
     (try
@@ -144,13 +154,17 @@
                   :orphan-frame (let [label (if (string? (:key ui)) (:key ui))]
                                    (db/orphan-frame label))
                   :config-catalog (db/set-catalog (:catalog ui))
+                  :export-csv (te/export-table-csv @last-query (:filename ui))
                   :toggle (toggle-var-fn (:key ui))
                   :continue (log/tracef "continue...")
                   :default (throw (IllegalStateException.
                                    (str "unknown directive: " dir)))))))
           (swap! lines-left dec)))
-      {:query (str/trim (.toString *query*))
-       :directive @directive})))
+      (let [query-str (str/trim (.toString *query*))]
+        (if (not (empty? query-str))
+          (reset! last-query query-str))
+        {:query query-str
+         :directive @directive}))))
 
 (defn- gen-prompt-fn []
   (let [line-no (atom 0)]
