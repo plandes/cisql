@@ -98,20 +98,17 @@
       :filename filename})))
 
 (defn- add-line [line]
-  (let [org-ns (ns-name *ns*)]
-    (try
-      ;; we have to set the namespace so resolve works in the REPL (namespace
-      ;; is `user' otherwise)
-      (in-ns 'com.zensol.cisql.process-query)
-      (some (fn [entry]
-              (if (and (seq? entry)
-                       (= 'fn (first entry)))
-                (eval (list entry line))
-                (let [directive-fn (resolve (first entry))
-                      params (cons line (rest entry))]
-                  (apply directive-fn params))))
-            input-rules)
-      (finally (in-ns org-ns)))))
+  ;; we have to set the namespace so resolve works in the REPL (namespace
+  ;; is `user' otherwise)
+  (binding [*ns* (find-ns 'com.zensol.cisql.process-query)]
+    (some (fn [entry]
+            (if (and (seq? entry)
+                     (= 'fn (first entry)))
+              (eval (list entry line))
+              (let [directive-fn (resolve (first entry))
+                    params (cons line (rest entry))]
+                (apply directive-fn params))))
+          input-rules)))
 
 (defn- maybe-set-log-level []
   (let [level (conf/config :loglev)]
