@@ -12,13 +12,13 @@
 
 (def products ["mysql" "postgresql" "sqlite"])
 
-(def ^:private dbspec (atom nil))
+;; (def ^:private dbspec (atom nil))
 
-(def ^:private current-catalog (atom nil))
+;; (def ^:private current-catalog (atom nil))
 
-(def ^:private db-info-data (atom nil))
+;; (def ^:private db-info-data (atom nil))
 
-(def ^:private last-frame-label (atom nil))
+;; (def ^:private last-frame-label (atom nil))
 
 (defn- resolve-connection [db]
   (let [conn (jdbc/db-connection db)
@@ -103,9 +103,13 @@
 
 (defn result-set-to-array [rs]
   (let [meta (.getMetaData rs)
+        col-count (.getColumnCount meta)
+        ;; must for SQLite: get headers before the result set is used up
+        header (doall (map #(.getColumnLabel meta %)
+                           (range 1 (+ 1 col-count))))
         rows (slurp-result-set rs meta)]
-    {:header (map #(.getColumnLabel meta %)
-                  (range 1 (+ 1 (.getColumnCount meta))))
+    (log/infof "col-count %d" col-count)
+    {:header header
      :rows (if (empty? rows) [{}] rows)}))
 
 (defn- display-result-set [rs meta]

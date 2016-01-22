@@ -39,5 +39,5 @@
              :dev {:jvm-opts
                    ["-Dlog4j.configurationFile=test-resources/log4j2.xml"]
                    :dependencies [[com.zensol/clojappend "1.0.2"]
-                                  [cider/cider-nrepl "0.9.0"]]}}
+                                  [cider/cider-nrepl "0.9.1"]]}}
   :main com.zensol.cisql.core)
