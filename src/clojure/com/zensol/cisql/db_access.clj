@@ -108,7 +108,7 @@
         header (doall (map #(.getColumnLabel meta %)
                            (range 1 (+ 1 col-count))))
         rows (slurp-result-set rs meta)]
-    (log/infof "col-count %d" col-count)
+    (log/debugf "col-count %d" col-count)
     {:header header
      :rows (if (empty? rows) [{}] rows)}))
 
