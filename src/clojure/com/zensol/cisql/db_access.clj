@@ -12,13 +12,13 @@
 
 (def products ["mysql" "postgresql" "sqlite"])
 
-;; (def ^:private dbspec (atom nil))
+(def ^:private dbspec (atom nil))
 
-;; (def ^:private current-catalog (atom nil))
+(def ^:private current-catalog (atom nil))
 
-;; (def ^:private db-info-data (atom nil))
+(def ^:private db-info-data (atom nil))
 
-;; (def ^:private last-frame-label (atom nil))
+(def ^:private last-frame-label (atom nil))
 
 (defn- resolve-connection [db]
   (let [conn (jdbc/db-connection db)
