@@ -53,10 +53,10 @@
   ([{user? :user?}]
    (let [{user :user url :url} (db-info)]
      (format "%s%s"
-             (if user?
+             (if (and user? user)
                (str (second (re-find #"^(.*)@.*$" user)) "@")
                "")
-             (second (re-find #"jdbc:.*?://(.*)$" url))))))
+             (or (second (re-find #"jdbc:.*?://?(.*?)$" url)) url)))))
 
 (defn set-db-spec [spec]
   (reset! dbspec spec))
