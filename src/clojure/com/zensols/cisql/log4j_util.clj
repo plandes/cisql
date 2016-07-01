@@ -1,4 +1,4 @@
-(ns com.zensol.cisql.log4j-util
+(ns com.zensols.cisql.log4j-util
   (:require [clojure.tools.logging :as log])
   (:import (org.apache.logging.log4j LogManager Level)))
 

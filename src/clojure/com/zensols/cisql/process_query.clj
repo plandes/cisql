@@ -1,11 +1,11 @@
-(ns com.zensol.cisql.process-query
+(ns com.zensols.cisql.process-query
   (:require [clojure.tools.logging :as log]
             [clojure.string :as str])
   (:import (java.io BufferedReader InputStreamReader StringReader))
-  (:require [com.zensol.cisql.conf :as conf]
-            [com.zensol.cisql.db-access :as db]
-            [com.zensol.cisql.table-export :as te]
-            [com.zensol.cisql.log4j-util :as lu]))
+  (:require [com.zensols.cisql.conf :as conf]
+            [com.zensols.cisql.db-access :as db]
+            [com.zensols.cisql.table-export :as te]
+            [com.zensols.cisql.log4j-util :as lu]))
 
 (def ^:dynamic *std-in* nil)
 
@@ -100,7 +100,7 @@
 (defn- add-line [line]
   ;; we have to set the namespace so resolve works in the REPL (namespace
   ;; is `user' otherwise)
-  (binding [*ns* (find-ns 'com.zensol.cisql.process-query)]
+  (binding [*ns* (find-ns 'com.zensols.cisql.process-query)]
     (some (fn [entry]
             (if (and (seq? entry)
                      (= 'fn (first entry)))

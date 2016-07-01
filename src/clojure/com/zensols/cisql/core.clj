@@ -1,14 +1,14 @@
-(ns com.zensol.cisql.core
+(ns com.zensols.cisql.core
   (:require [clojure.tools.logging :as log]
             [clojure.java.io :as io]
             [clojure.tools.cli :refer [parse-opts]]
             [clojure.string :as str]
             [clojure.pprint :only (pprint)])
   (:import (java.io BufferedReader InputStreamReader))
-  (:require [com.zensol.cisql.process-query :as query]
-            [com.zensol.cisql.db-access :as db]
-            [com.zensol.cisql.conf :as conf]
-            [com.zensol.cisql.repl :as repl])
+  (:require [com.zensols.cisql.process-query :as query]
+            [com.zensols.cisql.db-access :as db]
+            [com.zensols.cisql.conf :as conf]
+            [com.zensols.cisql.repl :as repl])
   (:import (clojure.lang ExceptionInfo))
   (:gen-class :main true))
 

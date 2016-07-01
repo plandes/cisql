@@ -1,14 +1,14 @@
-(ns com.zensol.cisql.db-access
+(ns com.zensols.cisql.db-access
   (:require [clojure.tools.logging :as log]
-            [clojure.string :as str])
+            [clojure.string :as str]
+            [clojure.java.jdbc :as jdbc])
   (:use [clojure.pprint :only (pprint print-table)])
-  (:require [clojure.java.jdbc :as jdbc])
-  (:import (java.io BufferedReader InputStreamReader StringReader))
-  (:import (java.sql SQLException))
-  (:import (com.zensol.gui.rs ResultSetFrame))
-  (:import (com.zensol.gui.pref ConfigPrefFrame PrefsListener PrefSupport))
-  (:require [com.zensol.rsgui.display-results :as dis])
-  (:require [com.zensol.cisql.conf :as conf]))
+  (:import (java.io BufferedReader InputStreamReader StringReader)
+           (java.sql SQLException))
+  (:import (com.zensols.gui.pref ConfigPrefFrame PrefsListener PrefSupport)
+           (com.zensols.gui.tabres ResultSetFrame))
+  (:require [com.zensols.cisql.conf :as conf]
+            [com.zensols.gui.tabres.display-results :as dis]))
 
 (def products ["mysql" "postgresql" "sqlite"])
 

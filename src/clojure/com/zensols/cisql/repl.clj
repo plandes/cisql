@@ -1,4 +1,4 @@
-(ns com.zensol.cisql.repl
+(ns com.zensols.cisql.repl
   (:require [clojure.tools.nrepl.server :as replserv])
   (:require [clojure.tools.nrepl.cmdline :as replcmd]))
 

@@ -1,4 +1,4 @@
-(defproject com.zensol/cisql "0.1.0-SNAPSHOT"
+(defproject com.zensols/cisql "0.1.0-SNAPSHOT"
   :description "Clojure based interactive SQL session"
   :plugins [[codox "0.8.12"]
             [org.clojars.cvillecsteele/lein-git-version "1.0.3"]]
@@ -7,18 +7,13 @@
   :source-paths ["src/clojure"]
   :java-source-paths ["src/java"]
   :javac-options ["-Xlint:unchecked"]
-  :repositories [["releases"
-                  {:url "dav:https://lngr.org:4555/mavenrepo/"}]]
-  :dependencies [[org.clojure/clojure "1.6.0"]
+  :dependencies [[org.clojure/clojure "1.8.0"]
 
                  ;; useful for debugging
                  [org.clojure/tools.nrepl "0.2.7"]
 
                  ;; api
                  [org.clojure/java.jdbc "0.3.7"]
-
-                 ;; gui
-                 [com.zensol/rsgui "0.0.1"]
 
                  ;; db drivers
                  [mysql/mysql-connector-java "5.1.35"]
@@ -34,10 +29,13 @@
                  [org.apache.logging.log4j/log4j-api "2.3"]
                  [org.apache.logging.log4j/log4j-slf4j-impl "2.3"]
                  [org.apache.logging.log4j/log4j-jcl "2.3"]
-                 [org.clojure/tools.logging "0.3.1"]]
+                 [org.clojure/tools.logging "0.3.1"]
+
+                 ;; gui
+                 [com.zensols.gui/tabres "0.0.1"]]
   :profiles {:uberjar {:aot :all}
+             :jar {:aot :all}
              :dev {:jvm-opts
                    ["-Dlog4j.configurationFile=test-resources/log4j2.xml"]
-                   :dependencies [[com.zensol/clojappend "1.0.2"]
-                                  [cider/cider-nrepl "0.9.1"]]}}
-  :main com.zensol.cisql.core)
+                   :dependencies [[com.zensols/clojappend "1.0.2"]]}}
+  :main com.zensols.cisql.core)
