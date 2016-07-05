@@ -1,11 +1,13 @@
 (defproject com.zensols/cisql "0.1.0-SNAPSHOT"
   :description "Clojure based interactive SQL session"
-  :plugins [[codox "0.8.12"]
+  :license {:name "Apache License - v2.0"
+            :url "http://www.apache.org/licenses/LICENSE-2.0"
+            :distribution :repo}
+  :plugins [[lein-codox "0.9.5"]
             [org.clojars.cvillecsteele/lein-git-version "1.0.3"]]
-  :codox {:defaults {:doc/format :markdown}
-          :output-dir "target/doc/codox"}
+  :codox {:metadata {:doc/format :markdown}
+          :output-path "doc/codox"}
   :source-paths ["src/clojure"]
-  :java-source-paths ["src/java"]
   :javac-options ["-Xlint:unchecked"]
   :dependencies [[org.clojure/clojure "1.8.0"]
 
@@ -32,7 +34,7 @@
                  [org.clojure/tools.logging "0.3.1"]
 
                  ;; gui
-                 [com.zensols.gui/tabres "0.0.1"]]
+                 [com.zensols.gui/tabres "0.0.2"]]
   :profiles {:uberjar {:aot :all}
              :jar {:aot :all}
              :dev {:jvm-opts
