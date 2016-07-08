@@ -2,10 +2,10 @@
   (:require [clojure.tools.logging :as log]
             [clojure.string :as str])
   (:import (java.io BufferedReader InputStreamReader StringReader))
+  (:require [zensols.actioncli.log4j2 :as lu])
   (:require [com.zensols.cisql.conf :as conf]
             [com.zensols.cisql.db-access :as db]
-            [com.zensols.cisql.table-export :as te]
-            [com.zensols.cisql.log4j-util :as lu]))
+            [com.zensols.cisql.table-export :as te]))
 
 (def ^:dynamic *std-in* nil)
 

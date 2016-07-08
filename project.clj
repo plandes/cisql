@@ -1,7 +1,7 @@
 (defproject com.zensols/cisql "0.1.0-SNAPSHOT"
   :description "Clojure based interactive SQL session"
-  :license {:name "Apache License - v2.0"
-            :url "http://www.apache.org/licenses/LICENSE-2.0"
+  :license {:name "GNU Lesser General Public License, Version 3.0"
+            :url "https://www.gnu.org/licenses/lgpl-3.0.en.html"
             :distribution :repo}
   :plugins [[lein-codox "0.9.5"]
             [org.clojars.cvillecsteele/lein-git-version "1.0.3"]]
@@ -32,6 +32,9 @@
                  [org.apache.logging.log4j/log4j-slf4j-impl "2.3"]
                  [org.apache.logging.log4j/log4j-jcl "2.3"]
                  [org.clojure/tools.logging "0.3.1"]
+
+                 ;; utils
+                 [com.zensols.tools/actioncli "0.0.1"]
 
                  ;; gui
                  [com.zensols.gui/tabres "0.0.2"]]

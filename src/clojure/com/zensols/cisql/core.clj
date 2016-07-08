@@ -5,10 +5,10 @@
             [clojure.string :as str]
             [clojure.pprint :only (pprint)])
   (:import (java.io BufferedReader InputStreamReader))
+  (:require [zensols.actioncli.repl :as repl])
   (:require [com.zensols.cisql.process-query :as query]
             [com.zensols.cisql.db-access :as db]
-            [com.zensols.cisql.conf :as conf]
-            [com.zensols.cisql.repl :as repl])
+            [com.zensols.cisql.conf :as conf])
   (:import (clojure.lang ExceptionInfo))
   (:gen-class :main true))
 
@@ -82,7 +82,8 @@
   (db/set-db-spec dbspec)
   (while true
     (try
-      (binding [query/*std-in* (BufferedReader. (InputStreamReader. System/in))]
+      (binding [query/*std-in* (BufferedReader.
+                                (InputStreamReader. System/in))]
         (query/process-queries
          {:end-query #(do (db/execute-query (:query %)))
           :end-session (fn [_]
