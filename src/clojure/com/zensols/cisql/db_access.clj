@@ -8,7 +8,7 @@
   (:import (com.zensols.gui.pref ConfigPrefFrame PrefsListener PrefSupport)
            (com.zensols.gui.tabres ResultSetFrame))
   (:require [com.zensols.cisql.conf :as conf]
-            [com.zensols.gui.tabres.display-results :as dis]))
+            [zensols.tabres.display-results :as dis]))
 
 (def products ["mysql" "postgresql" "sqlite"])
 

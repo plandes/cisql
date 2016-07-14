@@ -37,10 +37,10 @@
                  [com.zensols.tools/actioncli "0.0.1"]
 
                  ;; gui
-                 [com.zensols.gui/tabres "0.0.2"]]
+                 [com.zensols.gui/tabres "0.0.4"]]
   :profiles {:uberjar {:aot :all}
              :jar {:aot :all}
              :dev {:jvm-opts
                    ["-Dlog4j.configurationFile=test-resources/log4j2.xml"]
-                   :dependencies [[com.zensols/clojappend "1.0.2"]]}}
+                   :dependencies [[com.zensols/clj-append "1.0.4"]]}}
   :main com.zensols.cisql.core)
