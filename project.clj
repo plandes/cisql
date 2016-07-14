@@ -1,7 +1,8 @@
 (defproject com.zensols/cisql "0.1.0-SNAPSHOT"
   :description "Clojure based interactive SQL session"
-  :license {:name "GNU Lesser General Public License, Version 3.0"
-            :url "https://www.gnu.org/licenses/lgpl-3.0.en.html"
+  :url "https://github.com/plandes/clj-nlp-parse"
+  :license {:name "Apache License version 2.0"
+            :url "https://www.apache.org/licenses/LICENSE-2.0"
             :distribution :repo}
   :plugins [[lein-codox "0.9.5"]
             [org.clojars.cvillecsteele/lein-git-version "1.0.3"]]
@@ -34,7 +35,7 @@
                  [org.clojure/tools.logging "0.3.1"]
 
                  ;; utils
-                 [com.zensols.tools/actioncli "0.0.1"]
+                 [com.zensols.tools/actioncli "0.0.4"]
 
                  ;; gui
                  [com.zensols.gui/tabres "0.0.4"]]
