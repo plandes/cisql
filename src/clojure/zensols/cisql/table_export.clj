@@ -1,8 +1,8 @@
-(ns com.zensols.cisql.table-export
+(ns zensols.cisql.table-export
   (:require [clojure.tools.logging :as log]
             [clojure.java.io :as io]
             [clojure.data.csv :as csv])
-  (:require [com.zensols.cisql.db-access :as db]))
+  (:require [zensols.cisql.db-access :as db]))
 
 (defn export-table-csv [query filename]
   (letfn [(rs-handler [rs]

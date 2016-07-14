@@ -44,4 +44,4 @@
              :dev {:jvm-opts
                    ["-Dlog4j.configurationFile=test-resources/log4j2.xml"]
                    :dependencies [[com.zensols/clj-append "1.0.4"]]}}
-  :main com.zensols.cisql.core)
+  :main zensols.cisql.core)

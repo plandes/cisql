@@ -1,11 +1,11 @@
-(ns com.zensols.cisql.process-query
+(ns zensols.cisql.process-query
   (:require [clojure.tools.logging :as log]
             [clojure.string :as str])
   (:import (java.io BufferedReader InputStreamReader StringReader))
   (:require [zensols.actioncli.log4j2 :as lu])
-  (:require [com.zensols.cisql.conf :as conf]
-            [com.zensols.cisql.db-access :as db]
-            [com.zensols.cisql.table-export :as te]))
+  (:require [zensols.cisql.conf :as conf]
+            [zensols.cisql.db-access :as db]
+            [zensols.cisql.table-export :as te]))
 
 (def ^:dynamic *std-in* nil)
 

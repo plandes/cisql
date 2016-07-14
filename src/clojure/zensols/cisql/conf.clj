@@ -1,4 +1,4 @@
-(ns com.zensols.cisql.conf
+(ns zensols.cisql.conf
   (:require [clojure.string :as str]
             [clojure.tools.logging :as log])
   (:require [cisql.version :as ver]))
