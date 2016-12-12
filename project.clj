@@ -9,7 +9,7 @@
   :codox {:metadata {:doc/format :markdown}
           :project {:name "SQL CLI Interface"}
           :output-path "target/doc/codox"
-          :source-uri "https://github.com/plandes/SQL CLI Interface/blob/v{version}/{filepath}#L{line}"}
+          :source-uri "https://github.com/plandes/cisql/blob/v{version}/{filepath}#L{line}"}
   :source-paths ["src/clojure"]
   :java-source-paths ["src/java"]
   :javac-options ["-Xlint:unchecked"]
