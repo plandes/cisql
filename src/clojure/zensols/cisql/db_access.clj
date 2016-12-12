@@ -10,8 +10,6 @@
   (:require [zensols.tabres.display-results :as dis])
   (:require [zensols.cisql.conf :as conf]))
 
-(def products ["mysql" "postgresql" "sqlite"])
-
 (def ^:private dbspec (atom nil))
 
 (def ^:private current-catalog (atom nil))

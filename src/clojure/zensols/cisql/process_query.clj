@@ -1,4 +1,6 @@
-(ns zensols.cisql.process-query
+(ns ^{:doc "Process query at the command line from user input."
+      :author "Paul Landes"}
+    zensols.cisql.process-query
   (:require [clojure.tools.logging :as log]
             [clojure.string :as str])
   (:import (java.io BufferedReader InputStreamReader StringReader))
@@ -97,10 +99,12 @@
      {:dir :export-csv
       :filename filename})))
 
+(def ^:private this-ns *ns*)
+
 (defn- add-line [line]
   ;; we have to set the namespace so resolve works in the REPL (namespace
   ;; is `user' otherwise)
-  (binding [*ns* (find-ns 'com.zensols.cisql.process-query)]
+  (binding [*ns* this-ns]
     (some (fn [entry]
             (if (and (seq? entry)
                      (= 'fn (first entry)))
@@ -114,11 +118,14 @@
   (let [level (conf/config :loglev)]
     (when level
       (try
+        (log/debugf "setting log level to %s" level)
         (lu/change-log-level level)
         (catch Exception e
           (log/errorf "Can't set log level: %s" (.getMessage e)))))))
 
-(defn- read-query [prompt-fn set-var-fn show-var-fn toggle-var-fn]
+(defn- read-query
+  "Read a query and process it."
+  [prompt-fn set-var-fn show-var-fn toggle-var-fn]
   (binding [*query* (StringBuilder.)]
     (let [lines-left (atom 60)
           directive (atom nil)]
@@ -214,3 +221,19 @@
 (defn process-query-string [query-string dir-fns]
   (binding [*std-in* (BufferedReader. (StringReader. query-string))]
     (process-queries dir-fns)))
+
+(defn start-event-loop [dbspec]
+  (log/debug "staring loop")
+  (db/set-db-spec dbspec)
+  (while true
+    (try
+      (binding [*std-in* (BufferedReader. (InputStreamReader. System/in))]
+        (process-queries
+         {:end-query #(do (db/execute-query (:query %)))
+          :end-session (fn [_]
+                         (println "exiting...")
+                         (System/exit 0))
+          :end-file (fn [_] (System/exit 0))}))
+      (catch Exception e
+        (log/error e)
+        (.printStackTrace e)))))

@@ -2,22 +2,22 @@
   (:require [clojure.tools.logging :as log]
             [clojure.java.io :as io]
             [clojure.tools.cli :refer [parse-opts]]
-            [clojure.string :as str]
-            [clojure.pprint :only (pprint)])
-  (:import (java.io BufferedReader InputStreamReader))
-  (:require [zensols.actioncli.repl :as repl])
+            [clojure.string :as s])
+  (:require [zensols.actioncli.repl :as repl]
+            [zensols.actioncli.log4j2 :as lu]
+            [zensols.actioncli.parse :as zp])
   (:require [zensols.cisql.process-query :as query]
-            [zensols.cisql.db-access :as db]
+            [zensols.cisql.db-meta :as dbm]
             [zensols.cisql.conf :as conf])
   (:import (clojure.lang ExceptionInfo))
   (:gen-class :main true))
 
 (def ^:private product-list
-  (str/join ", " db/products))
+  (s/join ", " dbm/products))
 
 (def ^:private cli-options
   [["-s" "--subprotocol <vender>" "DB implementation"
-    :validate [#(contains? (set db/products) %)
+    :validate [#(contains? (set dbm/products) %)
                (str "Must be one of: " product-list)]]
    ["-u" "--user <string>" "login name"]
    ["-p" "--password <string>" "login password"]
@@ -28,32 +28,21 @@
     :parse-fn #(Integer/parseInt %)
     :validate [#(< 0 % 0x10000) "Must be a number between 0 and 65536"]]
    ["-c" "--config <key1=val1>[,key2=val2] ..."
-    :parse-fn (fn [op] (map #(str/split % #"=") (str/split op #"\s*,\s*")))]
+    :parse-fn (fn [op] (map #(s/split % #"=") (s/split op #"\s*,\s*")))]
    [nil "--repl" "start the REPL"]
    ["-v" "--version"]
    [nil "--help"]])
 
-(defn- map-subproto [name host port-or-nil database]
-  (let [portn (or port-or-nil
-                  (if name
-                    (case name
-                      "mysql" 3306
-                      "postgresql" 5432
-                      nil)))
-        port (if portn (format ":%d" portn) "")]
-    (case name
-      "sqlite" "sqlite"
-      (format "//%s%s/%s" host port database))))
-
-(defn- create-db-spec [opts]
+(defn create-db-spec
+  [opts]
   (if-not (:database opts)
-    (throw (ExceptionInfo. "Missing -d parameter." {})))
+    (throw (ex-info "Missing -d parameter." {})))
   (if-not (:subprotocol opts)
-    (throw (ExceptionInfo. "Missing -s parameter." {})))
+    (throw (ex-info "Missing -s parameter." {})))
   (let [spec
         (apply merge
                (cons {:subname
-                      (apply map-subproto
+                      (apply dbm/map-subproto
                              (map #(get opts %)
                                   [:subprotocol :host :port :database]))}
                      (map (fn [key]
@@ -66,33 +55,12 @@
              (assoc spec :subname (io/file (:database opts))))
       spec)))
 
-(defn- error-msg [errors]
-  (str "The following errors occurred while parsing your command:\n\n"
-       (str/join \newline errors)))
-
 (defn- print-help [summary]
   (println (conf/format-intro))
-  (println \newline)
+  (println)
   (println summary)
-  (println \newline)
+  (println)
   (println "Database subprotocols include:" product-list))
-
-(defn start-event-loop [dbspec]
-  (log/debug "staring loop")
-  (db/set-db-spec dbspec)
-  (while true
-    (try
-      (binding [query/*std-in* (BufferedReader.
-                                (InputStreamReader. System/in))]
-        (query/process-queries
-         {:end-query #(do (db/execute-query (:query %)))
-          :end-session (fn [_]
-                         (println "exiting...")
-                         (System/exit 0))
-          :end-file (fn [_] (System/exit 0))}))
-      (catch Exception e
-        (log/error e)
-        (.printStackTrace e)))))
 
 (defn- configure [conf]
   (doseq [[k v] conf]
@@ -100,26 +68,24 @@
     (conf/set-config (keyword k) v)))
 
 (defn -main [& args]
+  (lu/configure "cisql-log4j2.xml")
+  (zp/set-program-name "cisql")
   (let [{summary :summary opts :options errs :errors}
         (parse-opts args cli-options :in-order true)]
     (if (:repl opts)
       (future (repl/run-server)))
     (try
       (if errs
-        (throw (ExceptionInfo. (error-msg errs) {})))
+        (throw (ex-info (zp/error-msg errs) {})))
       (cond (:help opts) (print-help summary)
             (:version opts) (println (conf/format-version))
             true
             (let [dbspec (create-db-spec opts)]
               (if (:config opts)
                 (configure (:config opts)))
-              (conf/print-help false)
+              (conf/print-help nil)
               (log/infof "connecting to %s..." (:subname dbspec))
               (log/debugf "dbspec: %s" dbspec)
-              (start-event-loop dbspec)))
+              (query/start-event-loop dbspec)))
       (catch ExceptionInfo e
-        (binding [*out* *err*]
-          (println (.getMessage e))
-          (print \newline)
-          (println summary)
-          (System/exit 1))))))
+        (zp/handle-exception e)))))
