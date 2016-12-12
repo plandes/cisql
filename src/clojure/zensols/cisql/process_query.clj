@@ -179,7 +179,8 @@
           (print (format (conf/config :prompt) (swap! line-no inc)))
           (flush))))))
 
-(defn process-queries [dir-fns]
+(defn process-queries
+  [dir-fns]
   (let [prompt-fn (or (get dir-fns :prompt-for-input)
                       (gen-prompt-fn))]
     (letfn [(set-var [[key newval]]
@@ -190,9 +191,7 @@
               (if (= key 'show)
                 (conf/print-key-values)
                 (let [val (conf/config key)]
-                  (println (format "%s: %s" (name key) val))
-                  ;(println (format "Error: no such variable: %s" (name key)))
-                  )))
+                  (println (format "%s: %s" (name key) val)))))
             (toggle [key]
               (let [oldval (conf/config key)
                     nextval (not oldval)]
@@ -217,10 +216,6 @@
                        (:directive query-data)))))
         (when (= :end-query (:directive query-data))
           (recur (read-query prompt-fn set-var show toggle)))))))
-
-(defn process-query-string [query-string dir-fns]
-  (binding [*std-in* (BufferedReader. (StringReader. query-string))]
-    (process-queries dir-fns)))
 
 (defn start-event-loop [dbspec]
   (log/debug "staring loop")
