@@ -52,32 +52,26 @@ type 'help' to see a list of commands
 | 619 |            Most Consistent |     4 |
  1 > tg gui
 gui: false -> true
- 1 > select * from award limit 10;
+1 > select * from award limit 10;
 10 row(s) affected (0.828s)
- 1 > help
-Clojure Interactive SQL (cisql) v0.0.10
-(C) Paul Landes 2015 - 2017
-commands:
-cf <variable value>  configure (set) a 'variable' to 'value' (ie 'tg gui')
-sh [variable]        show 'variable', or show them all if not given
-tg <variable>        toggle a boolean variable
-shtab [table]        show table metdata or all if no table given
-orph [label]         orphan (spawn new next) window in GUI mode
-cfcat <catalog>      configure (set) the database (like 'use <db name>')
-export <filename>    export the last query as a CSV file
+```
 
-variables:
-gui:                whether or not to use a graphical window to display result sets
-linesep:            tell where to end a query and then send
-prompt:             a format string for the promp
-errorlong:          if true provide more error information
-loglev:             log level of the program (error, warn, info (default), debug, trace)
+The last command produces the following GUI results window:
+
+![GUI Results](https://plandes.github.io/cisql/img/results.png)
+
+```sql
  1 > orph awards
  1 > select * from award limit 20;
 20 row(s) affected (0.037s)
  1 > export /d/awards.csv
 20 row(s) affected (0.014s)
 ```
+The last command creates a new `.csv` spreadsheet file shown below:
+
+![Spreadsheet .csv](https://plandes.github.io/cisql/img/spreadsheet-export.png)
+)
+
 
 ## License
 
