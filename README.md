@@ -1,4 +1,4 @@
-# SQL CLI Interface
+# SQL Command Line Interface written in Clojure
 
 This program provides a command line interface to interacting with relational
 database managements systems (RDMBs) and currently includes SQLite, MySQL and
