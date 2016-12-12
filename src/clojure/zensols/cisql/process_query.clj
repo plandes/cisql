@@ -203,7 +203,10 @@
   "Process a line of user input and use callback functions **dir-fns**, which
   is a map of functions that are called by key based on the following actions:
 
-* **:end-query** called when "
+* **:end-query** called when the user is completed her input and wants to send
+  it to be processed
+* **:end-session** the user has given the exit command
+* **:end-file** the user has hit the end of file sequence (CTRL-D)"
   [dir-fns]
   (let [prompt-fn (or (get dir-fns :prompt-for-input)
                       (gen-prompt-fn))]
