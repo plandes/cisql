@@ -32,6 +32,10 @@
                  [com.zensols.gui/tabres "0.0.4"]
                  [com.zensols.gui/pref "0.0.2"]
 
+                 ;; logging: log4j2
+                 [org.apache.logging.log4j/log4j-api "2.7"]
+                 [org.apache.logging.log4j/log4j-core "2.7"]
+
                  ;; command line
                  [com.zensols.tools/actioncli "0.0.12"]]
   :pom-plugins [[org.codehaus.mojo/appassembler-maven-plugin "1.6"
@@ -45,5 +49,5 @@
              :dev
              {:jvm-opts
               ["-Dlog4j.configurationFile=test-resources/log4j2.xml" "-Xms4g" "-Xmx8g" "-XX:+UseConcMarkSweepGC"]
-              :dependencies [[com.zensols/clj-append "1.0.4"]]}}
+              :dependencies [[com.zensols/clj-append "1.0.5"]]}}
   :main zensols.cisql.core)

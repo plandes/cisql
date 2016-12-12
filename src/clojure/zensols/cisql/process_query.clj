@@ -51,13 +51,17 @@
         (print (parse-keyword line key)))
       {:dir directive})))
 
-(defn- config-setting [line]
+(defn- config-setting
+  "Sets a variable"
+  [line]
   (let [[_ key val] (re-find #"^\s*cf\s+([^\s]+)\s(.+?)$" line)]
     (if key
       {:dir :setting
        :settings [(keyword key) val]})))
 
-(defn- show-setting [line]
+(defn- show-setting
+  "Show a variable mapping."
+  [line]
   (let [[_ key] (re-find #"^\s*sh(?:\s+([^ ]+))?\s*$" line)]
     (if _
      {:dir :show
@@ -65,13 +69,17 @@
              (keyword key)
              'show)})))
 
-(defn- toggle-setting [line]
+(defn- toggle-setting
+  "Toggle a binary variable (i.e. whether or not to use the GUI)."
+  [line]
   (let [[_ key] (re-find #"^\s*tg\s+([^\s]+)\s*$" line)]
     (if key
      {:dir :toggle
       :key (keyword key)})))
 
-(defn- show-tables [line]
+(defn- show-tables
+  "Show all tables in the database."
+  [line]
   (let [[_ table] (re-find #"^\s*shtab(?:\s+([^\s]+))?\s*$" line)]
     (if _
      {:dir :show-table
@@ -79,7 +87,10 @@
              table
              (if _ 'show-all))})))
 
-(defn- orphan-frame [line]
+(defn- orphan-frame
+  "Orphan the GUI frame so that it stays on the deskop rather than repopulate
+  with the next command."
+  [line]
   (let [[_ table] (re-find #"^\s*orph(?:\s+([^\s]+))?\s*$" line)]
     (if _
       {:dir :orphan-frame
@@ -87,13 +98,17 @@
               table
               (if _ 'default-label))})))
 
-(defn- config-catalog [line]
+(defn- config-catalog
+  "Configure which DB to use."
+  [line]
   (let [[_ catalog] (re-find #"^\s*cfcat\s+([^\s]+)\s*$" line)]
     (if _
      {:dir :config-catalog
       :catalog catalog})))
 
-(defn- export-csv [line]
+(defn- export-csv
+  "Export the last query to a CSV file."
+  [line]
   (let [[_ filename] (re-find #"^\s*export\s+([^\s]+)\s*$" line)]
     (if _
      {:dir :export-csv
@@ -101,7 +116,10 @@
 
 (def ^:private this-ns *ns*)
 
-(defn- add-line [line]
+(defn- add-line
+  "Add a line of user input to the input buffer and apply directives if
+  needed."
+  [line]
   ;; we have to set the namespace so resolve works in the REPL (namespace
   ;; is `user' otherwise)
   (binding [*ns* this-ns]
@@ -114,7 +132,9 @@
                 (apply directive-fn params))))
           input-rules)))
 
-(defn- maybe-set-log-level []
+(defn- maybe-set-log-level
+  "Set the log level with the Log4J system."
+  []
   (let [level (conf/config :loglev)]
     (when level
       (try
@@ -180,6 +200,10 @@
           (flush))))))
 
 (defn process-queries
+  "Process a line of user input and use callback functions **dir-fns**, which
+  is a map of functions that are called by key based on the following actions:
+
+* **:end-query** called when "
   [dir-fns]
   (let [prompt-fn (or (get dir-fns :prompt-for-input)
                       (gen-prompt-fn))]
@@ -217,7 +241,9 @@
         (when (= :end-query (:directive query-data))
           (recur (read-query prompt-fn set-var show toggle)))))))
 
-(defn start-event-loop [dbspec]
+(defn start-event-loop
+  "Start the command event loop using standard in/out."
+  [dbspec]
   (log/debug "staring loop")
   (db/set-db-spec dbspec)
   (while true

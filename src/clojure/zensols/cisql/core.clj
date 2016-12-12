@@ -1,4 +1,6 @@
-(ns zensols.cisql.core
+(ns ^{:doc "Command line entry point namesakes."
+      :author "Paul Landes"}
+  zensols.cisql.core
   (:require [clojure.tools.logging :as log]
             [clojure.java.io :as io]
             [clojure.tools.cli :refer [parse-opts]]
