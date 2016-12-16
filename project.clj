@@ -29,7 +29,7 @@
                  [org.clojure/data.csv "0.1.2"]
 
                  ;; gui
-                 [com.zensols.gui/tabres "0.0.4"]
+                 [com.zensols.gui/tabres "0.0.6"]
                  [com.zensols.gui/pref "0.0.2"]
 
                  ;; logging: log4j2
