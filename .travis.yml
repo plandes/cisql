@@ -1,0 +1,9 @@
+language: clojure
+lein: lein2
+before_script:
+  - src/ci/prepare.sh
+script: ZBHOME=target/clj-zenbuild make check
+jdk:
+  - openjdk7
+  - oraclejdk7
+  - oraclejdk8
