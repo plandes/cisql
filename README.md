@@ -1,4 +1,7 @@
-# SQL Command Line Interface written in Clojure
+# SQL Command Line Interface [![Travis CI Build Status][travis-badge]][travis-link]
+
+  [travis-link]: https://travis-ci.org/plandes/buffer-manage
+  [travis-badge]: https://travis-ci.org/plandes/buffer-manage.svg?branch=master
 
 This program provides a command line interface to interacting with relational
 database managements systems (RDMBs) and currently includes SQLite, MySQL and
