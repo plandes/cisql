@@ -1,6 +1,6 @@
 (ns ^{:doc "Configuration package"
       :author "Paul Landes"}
-  zensols.cisql.conf
+    zensols.cisql.conf
   (:require [clojure.string :as str]
             [clojure.tools.logging :as log])
   (:require [cisql.version :as ver]))

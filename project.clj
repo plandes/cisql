@@ -23,10 +23,10 @@
                  [org.clojure/java.jdbc "0.3.7"]
 
                  ;; db drivers
-                 [mysql/mysql-connector-java "5.1.35"]
-                 [postgresql/postgresql "9.1-901-1.jdbc4"]
-                 [org.xerial/sqlite-jdbc "3.8.11.2"]
                  [org.clojure/data.csv "0.1.2"]
+
+                 ;; driver dep download
+                 [com.cemerick/pomegranate "0.3.1"]
 
                  ;; gui
                  [com.zensols.gui/tabres "0.0.6"]
@@ -35,9 +35,11 @@
                  ;; logging: log4j2
                  [org.apache.logging.log4j/log4j-api "2.7"]
                  [org.apache.logging.log4j/log4j-core "2.7"]
+                 [org.apache.logging.log4j/log4j-1.2-api "2.7"]
+                 [org.apache.logging.log4j/log4j-jcl "2.7"]
 
                  ;; command line
-                 [com.zensols.tools/actioncli "0.0.12"]]
+                 [com.zensols.tools/actioncli "0.0.13"]]
   :pom-plugins [[org.codehaus.mojo/appassembler-maven-plugin "1.6"
                  {:configuration ([:programs
                                    [:program

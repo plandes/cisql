@@ -5,8 +5,7 @@
             [clojure.pprint :refer (pprint print-table)])
   (:import (java.io BufferedReader InputStreamReader StringReader)
            (java.sql SQLException))
-  (:import (com.zensols.gui.pref ConfigPrefFrame PrefsListener PrefSupport)
-           (com.zensols.gui.tabres ResultSetFrame))
+  (:import (com.zensols.gui.tabres ResultSetFrame))
   (:require [zensols.tabres.display-results :as dis])
   (:require [zensols.cisql.conf :as conf]))
 
