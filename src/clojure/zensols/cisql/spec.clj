@@ -4,9 +4,12 @@ downloads the JDBC drivers."
     zensols.cisql.spec
   (:require [clojure.java.io :as io]
             [clojure.tools.logging :as log]
+            [clojure.string :as s]
+            [clojure.set :refer (rename-keys)]
             [clojure.data.csv :as csv])
   (:require [cemerick.pomegranate :refer (add-dependencies)])
-  (:require [zensols.actioncli.dynamic :refer (defa-) :as dyn])
+  (:require [zensols.actioncli.dynamic :refer (defa-) :as dyn]
+            [zensols.actioncli.parse :refer (with-exception)])
   (:require [zensols.cisql.pref :as pref]))
 
 (defa- driver-meta-inst)
@@ -30,14 +33,18 @@ downloads the JDBC drivers."
     (->> (rest rows)
          (map #(zipmap header %)))))
 
-(defn- row-to-meta
-  [{:keys [name subname class] :as row}]
+(defn- flat-to-map [flat]
+  {(:name flat) (dissoc flat :name)})
+
+(defn- flat-to-meta
+  [{:keys [subname class] :as flat}]
   (let [subname (if (empty? subname)
                   default-subname
                   (eval (read-string subname)))
         class (if-not (empty? class) class)]
-    {name (merge (dissoc row :name)
-                 {:subname subname :class class})}))
+    (->> {:subname subname :class class}
+         (merge flat)
+         flat-to-map)))
 
 (defn- create-driver-meta
   "Create the driver metadata by parsing the driver information CSV."
@@ -45,7 +52,7 @@ downloads the JDBC drivers."
   (with-open [reader (io/reader (io/resource "driver.csv"))]
     (->> (csv/read-csv reader)
          rows-to-maps
-         (map row-to-meta)
+         (map flat-to-meta)
          (apply merge))))
 
 (defn- driver-meta
@@ -58,24 +65,12 @@ downloads the JDBC drivers."
   ([]
    (swap! driver-meta-inst #(or % (create-driver-meta)))))
 
-;; (-> (driver-meta)
-;;     (get "postgres")
-;;     (assoc :name "postgres")
-;;     (dissoc :subname)
-;;     list
-;;     pref/set-driver-metas)
-
-;; (->> (pref/driver-metas)
-;;      (map row-to-meta)
-;;      (apply merge))
-
 (defn- load-dependencies
   "Download and class load a JDBC driver."
   [meta]
-  (let [{:keys [artifact-id group-id version]} meta]
-    (log/infof "loading dependencies for %s/%s/%s"
-               artifact-id group-id version)
-    (->> (format "[[%s/%s \"%s\"]]" group-id artifact-id version)
+  (let [{:keys [artifact group version]} meta]
+    (log/infof "loading dependencies for %s/%s/%s" artifact group version)
+    (->> (format "[[%s/%s \"%s\"]]" group artifact version)
          read-string
          (add-dependencies :coordinates))))
 
@@ -110,3 +105,56 @@ downloads the JDBC drivers."
   information (not actual JDBC drivers)."
   []
   (->> (driver-meta) keys))
+
+(defn- opts-to-flat [opts]
+  (let [manditory-keys [:name :subprotocol :group :artifact :version]
+        optional-keys [:port :class :subname]]
+    (->> manditory-keys
+         (map (fn [okey]
+                (if-not (contains? opts okey)
+                  (throw (ex-info (format "Missing --%s option" (-> okey name))
+                                  {:opts opts
+                                   :key okey})))
+                okey))
+         (concat optional-keys)
+         (select-keys opts))))
+
+(defn- put-flat [flat]
+  (->> (pref/driver-metas)
+       (merge (flat-to-map flat))
+       pref/set-driver-metas))
+
+(defn name-option [validate?]
+  (concat ["-n" "--name" "DB implementation name"
+           :required "<product>"]
+          (if validate?
+            [:validate [#(contains? (set (registered-names)) %)
+                        (str "Must be one of: "
+                             (s/join ", " (registered-names)))]])))
+
+(def driver-add-command
+  "CLI command to install a JDBC driver."
+  {:description "Install JDBC driver"
+   :options
+   [(name-option false)
+    ["-s" "--subprotocol" "subprotocol (ex: mysql)"
+     :required "<string>"]
+    [nil "--subname" "subname or create expression (ex: #(io/file (:database %)))"
+     :required "<string>"]
+    ["-g" "--group" "maven group ID coordinate element (ex: org.mysql)"
+     :required "<string>"]
+    ["-a" "--artifact" "maven artifact ID coordinate element (ex: mysql-connector)"
+     :required "<string>"]
+    ["-v" "--version" "maven version ID coordinate element (ex: 5.1.35)"
+     :required "<string>"]
+    ["-p" "--port" "the default bound database port (ex: 3306)"
+     :required "<number>"
+     :parse-fn read-string
+     :validate [#(< 0 % 0x10000) "Must be a number between 0 and 65536"]]
+    ["-c" "--class" "JDBC driver class (ex: org.sqlite.JDBC)"]]
+   :app (fn [{:keys [name] :as opts} & args]
+          (log/infof "loading driver: %s" name)
+          (with-exception
+            (let [flat (opts-to-flat opts)]
+              (load-dependencies flat)
+              (put-flat flat))))})

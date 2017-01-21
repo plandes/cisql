@@ -1,4 +1,4 @@
-name,subprotocol,group-id,artifact-id,version,port,class,subname
+name,subprotocol,group,artifact,version,port,class,subname
 mysql,mysql,mysql,mysql-connector-java,5.1.35,3306,,
 postgres,postgresql,postgresql,postgresql,9.1-901-1.jdbc4,5432,,
 sqlite,sqlite,org.xerial,sqlite-jdbc,3.8.11.2,,org.sqlite.JDBC,#(io/file (:database %))

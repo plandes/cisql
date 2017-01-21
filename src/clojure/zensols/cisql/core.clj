@@ -14,7 +14,6 @@
     (println (conf/format-intro))
     (println)
     (println summary)
-    (println)
     (println "Database subprotocols include:"
              (s/join ", " (spec/registered-names)))))
 
@@ -26,9 +25,10 @@
           (if refp (println cisql.version/gitref)))})
 
 (defn create-command-context []
-  {:command-defs '((:interactive zensols.cisql interactive interactive-command))
+  {:command-defs '((:interactive zensols.cisql interactive interactive-command)
+                   (:add zensols.cisql spec driver-add-command))
    :single-commands {:version version-info-command}
-   :command-print-order [:interactive :version]
+   :command-print-order [:interactive :add :version]
    :print-help-fn print-help})
 
 (defn -main [& args]
@@ -36,3 +36,7 @@
   (parse/set-program-name "cisql")
   (let [command-context (create-command-context)]
     (apply parse/process-arguments command-context args)))
+
+;; (binding [parse/*dump-jvm-on-error* false]
+;;   (-main "add" "-n" "mysql" "-s" "mysql" "-g" "mysql" "-a" "mysql-connector-java" "-v" "5.1.35" "-p" "3306"))
+(-main)

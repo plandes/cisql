@@ -28,10 +28,7 @@ downloads the JDBC drivers."
   "CLI command to start an interactive session."
   {:description "Start an interactive session"
    :options
-   [["-n" "--name <vender>" "DB implementation name"
-     :validate [#(contains? (set (spec/registered-names)) %)
-                (str "Must be one of: "
-                     (s/join ", " (spec/registered-names)))]]
+   [(spec/name-option true)
     ["-u" "--user <string>" "login name"]
     ["-p" "--password <string>" "login password"]
     ["-h" "--host <string>" "database host name"
