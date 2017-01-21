@@ -44,7 +44,6 @@ downloads the JDBC drivers."
     (repl/repl-port-set-option nil "--repl")]
    :app (fn [{:keys [repl config] :as opts} & args]
           (with-exception
-            (lu/change-log-level "info")
             (let [dbspec (create-db-spec opts)]
               (if repl
                 (future (repl/run-server {:port 12345})))
