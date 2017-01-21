@@ -26,9 +26,11 @@
 
 (defn create-command-context []
   {:command-defs '((:interactive zensols.cisql interactive interactive-command)
-                   (:add zensols.cisql spec driver-add-command))
+                   (:describe zensols.cisql spec driver-describe-command)
+                   (:add zensols.cisql spec driver-add-command)
+                   (:purge zensols.cisql spec driver-user-registry-purge-command))
    :single-commands {:version version-info-command}
-   :command-print-order [:interactive :add :version]
+   :command-print-order [:interactive :describe :add :purge :version]
    :print-help-fn print-help})
 
 (defn -main [& args]
@@ -36,7 +38,3 @@
   (parse/set-program-name "cisql")
   (let [command-context (create-command-context)]
     (apply parse/process-arguments command-context args)))
-
-;; (binding [parse/*dump-jvm-on-error* false]
-;;   (-main "add" "-n" "mysql" "-s" "mysql" "-g" "mysql" "-a" "mysql-connector-java" "-v" "5.1.35" "-p" "3306"))
-(-main)

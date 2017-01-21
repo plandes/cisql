@@ -6,7 +6,8 @@ downloads the JDBC drivers."
             [clojure.java.io :as io]
             [clojure.string :as s])
   (:require [zensols.actioncli.parse :refer (with-exception)]
-            [zensols.actioncli.repl :as repl])
+            [zensols.actioncli.repl :as repl]
+            [zensols.actioncli.log4j2 :as lu])
   (:require [zensols.cisql.process-query :as query]
             [zensols.cisql.spec :as spec]
             [zensols.cisql.conf :as conf]))
@@ -43,6 +44,7 @@ downloads the JDBC drivers."
     (repl/repl-port-set-option nil "--repl")]
    :app (fn [{:keys [repl config] :as opts} & args]
           (with-exception
+            (lu/change-log-level "info")
             (let [dbspec (create-db-spec opts)]
               (if repl
                 (future (repl/run-server {:port 12345})))

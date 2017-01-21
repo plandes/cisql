@@ -9,7 +9,8 @@ downloads the JDBC drivers."
             [clojure.data.csv :as csv])
   (:require [cemerick.pomegranate :refer (add-dependencies)])
   (:require [zensols.actioncli.dynamic :refer (defa-) :as dyn]
-            [zensols.actioncli.parse :refer (with-exception)])
+            [zensols.actioncli.parse :refer (with-exception)]
+            [zensols.actioncli.log4j2 :as lu])
   (:require [zensols.cisql.pref :as pref]))
 
 (defa- driver-meta-inst)
@@ -46,14 +47,23 @@ downloads the JDBC drivers."
          (merge flat)
          flat-to-map)))
 
-(defn- create-driver-meta
-  "Create the driver metadata by parsing the driver information CSV."
+(defn- resource-driver-meta
+  "Parse the CSV resource JDBC driver registry."
   []
   (with-open [reader (io/reader (io/resource "driver.csv"))]
     (->> (csv/read-csv reader)
          rows-to-maps
          (map flat-to-meta)
          (apply merge))))
+
+(defn- create-driver-meta
+  "Create the driver metadata by parsing the driver information CSV."
+  []
+  (->> (pref/driver-metas)
+       (map (fn [[name flat]]
+              (flat-to-meta (assoc flat :name name))))
+       (concat (list (resource-driver-meta)))
+       (apply merge)))
 
 (defn- driver-meta
   "Return the driver meta data.  If **name** is given, only return the metadata
@@ -65,13 +75,15 @@ downloads the JDBC drivers."
   ([]
    (swap! driver-meta-inst #(or % (create-driver-meta)))))
 
+(defn- format-dependency [{:keys [artifact group version]}]
+  (format "[[%s/%s \"%s\"]]" group artifact version))
+
 (defn- load-dependencies
   "Download and class load a JDBC driver."
   [meta]
-  (let [{:keys [artifact group version]} meta]
-    (log/infof "loading dependencies for %s/%s/%s" artifact group version)
-    (->> (format "[[%s/%s \"%s\"]]" group artifact version)
-         read-string
+  (let [dep (format-dependency meta)]
+    (log/infof "loading dependencies for %s" dep)
+    (->> (read-string dep)
          (add-dependencies :coordinates))))
 
 (defn- create-db-spec
@@ -122,7 +134,8 @@ downloads the JDBC drivers."
 (defn- put-flat [flat]
   (->> (pref/driver-metas)
        (merge (flat-to-map flat))
-       pref/set-driver-metas))
+       pref/set-driver-metas)
+  (log/infof "added driver: %s" (:name flat)))
 
 (defn name-option [validate?]
   (concat ["-n" "--name" "DB implementation name"
@@ -132,9 +145,35 @@ downloads the JDBC drivers."
                         (str "Must be one of: "
                              (s/join ", " (registered-names)))]])))
 
+(defn- driver-describe []
+  (->> (driver-meta)
+       (into (sorted-map))
+       (map (fn [[name meta]]
+              (let [fmt "  - %s: %s"]
+                (->> [:subprotocol :port :class]
+                     (map #(format fmt
+                                   (clojure.core/name %)
+                                   (or (get meta %) "*none*")))
+                     (#(concat % (->> (format-dependency meta)
+                                      read-string first pr-str
+                                      (format fmt "dependency")
+                                      list)))
+                     (cons (format "* %s:" name))
+                     (s/join \newline)))))
+       (s/join (str \newline \newline))))
+
+(def driver-describe-command
+  "CLI command to list drivers currently installed."
+  {:description "List drivers currently installed"
+   :options []
+   :app (fn [opts & args]
+          (with-exception
+            (println "# Driver Registry")
+            (println (driver-describe))))})
+
 (def driver-add-command
   "CLI command to install a JDBC driver."
-  {:description "Install JDBC driver"
+  {:description "Install a driver to the user's local JDBC registry"
    :options
    [(name-option false)
     ["-s" "--subprotocol" "subprotocol (ex: mysql)"
@@ -155,6 +194,18 @@ downloads the JDBC drivers."
    :app (fn [{:keys [name] :as opts} & args]
           (log/infof "loading driver: %s" name)
           (with-exception
+            (lu/change-log-level "debug")
             (let [flat (opts-to-flat opts)]
               (load-dependencies flat)
               (put-flat flat))))})
+
+(def driver-user-registry-purge-command
+  "CLI command to install a JDBC driver."
+  {:description "Purge (clear) the user's local JDBC registry"
+   :options []
+   :app (fn [opts & args]
+          (log/info "purging user local JDBC registry")
+          (with-exception
+            (lu/change-log-level "info")
+            (pref/clear)
+            (log/info "user's local JDBC registry purged")))})
