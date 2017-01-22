@@ -22,6 +22,10 @@ downloads the JDBC drivers."
 
 (defn- configure [conf]
   (doseq [[k v] conf]
+    (if (nil? v)
+      (-> (format "Missing configuration value for %s" k)
+          (ex-info {:key k})
+          throw))
     (log/debugf "%s -> %s" (keyword k) v)
     (conf/set-config (keyword k) v)))
 
@@ -45,8 +49,9 @@ downloads the JDBC drivers."
    :app (fn [{:keys [repl config] :as opts} & args]
           (with-exception
             (let [dbspec (create-db-spec opts)]
-              (if repl
-                (future (repl/run-server {:port 12345})))
+              (when repl
+                (log/infof "starting repl on port %d" repl)
+                (future (repl/run-server repl)))
               (and config (configure config))
               (conf/print-help nil)
               (log/infof "connecting to %s..." (:subname dbspec))

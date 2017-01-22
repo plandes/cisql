@@ -41,8 +41,11 @@
                    (count (conf/config key))))))
 
 (defn- has-end-tok [line key entire-line? directive]
+  (log/debugf "line: <%s>, key: <%s>, entire-line?: <%s>, directive: <%s>"
+              line key entire-line? directive)
   (let [conform (str/lower-case (str/trim line))
         val (conf/config key)
+        _ (log/debugf "val: %s" val)
         found? (if entire-line?
                  (= conform val)
                  (.endsWith conform val))]
