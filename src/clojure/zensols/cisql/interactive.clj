@@ -34,6 +34,7 @@ downloads the JDBC drivers."
   {:description "Start an interactive session"
    :options
    [(spec/name-option true)
+    (lu/log-level-set-option)
     ["-u" "--user <string>" "login name"]
     ["-p" "--password <string>" "login password"]
     ["-h" "--host <string>" "database host name"
@@ -45,7 +46,7 @@ downloads the JDBC drivers."
     ["-c" "--config <k1=v1>[,k2=v2] ..." "set session configuration"
      :parse-fn (fn [op]
                  (map #(s/split % #"=") (s/split op #"\s*,\s*")))]
-    (repl/repl-port-set-option nil "--repl")]
+    (repl/repl-port-set-option nil "--repl" nil)]
    :app (fn [{:keys [repl config] :as opts} & args]
           (with-exception
             (let [dbspec (create-db-spec opts)]
