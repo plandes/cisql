@@ -17,21 +17,17 @@
     (println "Database subprotocols include:"
              (s/join ", " (spec/registered-names)))))
 
-(def version-info-command
-  {:description "Get the version of the application."
-   :options [["-g" "--gitref"]]
-   :app (fn [{refp :gitref} & args]
-          (println cisql.version/version)
-          (if refp (println cisql.version/gitref)))})
+(defn- version-info []
+  (println (format "%s (%s)" cisql.version/version cisql.version/gitref)))
 
 (defn- create-action-context []
   (parse/multi-action-context
-   '((:interactive zensols.cisql interactive interactive-command)
-     (:describe zensols.cisql spec driver-describe-command)
-     (:add zensols.cisql spec driver-add-command)
-     (:purge zensols.cisql spec driver-user-registry-purge-command))
-   :action-print-order [:interactive :describe :add :purge :version]
-   :version-option version-info-command
+   '((:interactive zensols.cisql.interactive interactive-command)
+     (:describe zensols.cisql.spec driver-describe-command)
+     (:add zensols.cisql.spec driver-add-command)
+     (:purge zensols.cisql.spec driver-user-registry-purge-command))
+   :action-print-order [:interactive :describe :add :purge]
+   :version-option (parse/version-option version-info)
    :print-help-fn print-help))
 
 (defn -main [& args]
