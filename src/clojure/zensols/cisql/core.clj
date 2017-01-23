@@ -11,6 +11,7 @@
 
 (defn- print-help [summary]
   (with-out-str
+    (println)
     (println (conf/format-intro))
     (println)
     (println summary)
