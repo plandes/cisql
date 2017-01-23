@@ -73,7 +73,7 @@ The last command produces the following GUI results window:
 The last command creates a new `.csv` spreadsheet file shown below:
 
 ![Spreadsheet .csv](https://plandes.github.io/cisql/img/spreadsheet-export.png)
-)
+
 
 
 ## License
