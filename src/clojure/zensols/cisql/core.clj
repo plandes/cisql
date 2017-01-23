@@ -17,24 +17,25 @@
     (println "Database subprotocols include:"
              (s/join ", " (spec/registered-names)))))
 
-(def ^:private version-info-command
+(def version-info-command
   {:description "Get the version of the application."
    :options [["-g" "--gitref"]]
    :app (fn [{refp :gitref} & args]
           (println cisql.version/version)
           (if refp (println cisql.version/gitref)))})
 
-(defn create-command-context []
-  {:command-defs '((:interactive zensols.cisql interactive interactive-command)
-                   (:describe zensols.cisql spec driver-describe-command)
-                   (:add zensols.cisql spec driver-add-command)
-                   (:purge zensols.cisql spec driver-user-registry-purge-command))
-   :single-commands {:version version-info-command}
-   :command-print-order [:interactive :describe :add :purge :version]
-   :print-help-fn print-help})
+(defn- create-action-context []
+  (parse/multi-action-context
+   '((:interactive zensols.cisql interactive interactive-command)
+     (:describe zensols.cisql spec driver-describe-command)
+     (:add zensols.cisql spec driver-add-command)
+     (:purge zensols.cisql spec driver-user-registry-purge-command))
+   :action-print-order [:interactive :describe :add :purge :version]
+   :version-option version-info-command
+   :print-help-fn print-help))
 
 (defn -main [& args]
   (lu/configure "cisql-log4j2.xml")
   (parse/set-program-name "cisql")
-  (let [command-context (create-command-context)]
-    (apply parse/process-arguments command-context args)))
+  (-> (create-action-context)
+      (parse/process-arguments args)))
