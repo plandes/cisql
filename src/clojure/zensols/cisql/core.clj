@@ -14,6 +14,7 @@
     (println (conf/format-intro))
     (println)
     (println summary)
+    (println)
     (println "Database subprotocols include:"
              (s/join ", " (spec/registered-names)))))
 
