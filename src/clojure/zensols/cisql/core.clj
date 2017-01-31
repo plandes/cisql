@@ -6,7 +6,7 @@
             [zensols.actioncli.parse :as parse])
   (:require [zensols.cisql.conf :as conf]
             [zensols.cisql.spec :as spec])
-  (:require [cisql.version])
+  (:require [zensols.cisql.version :as ver])
   (:gen-class :main true))
 
 (defn- print-help [summary]
@@ -16,11 +16,12 @@
     (println)
     (println summary)
     (println)
-    (println "Database subprotocols include:"
-             (s/join ", " (spec/registered-names)))))
+    (print "Database subprotocols include:"
+           (s/join ", " (spec/registered-names)))
+    (flush)))
 
 (defn- version-info []
-  (println (format "%s (%s)" cisql.version/version cisql.version/gitref)))
+  (println (format "%s (%s)" ver/version ver/gitref)))
 
 (defn- create-action-context []
   (parse/multi-action-context

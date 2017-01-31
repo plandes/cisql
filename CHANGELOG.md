@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 ### Added
 - Adding CHANGELOG.md
+- Moving to lein-git-version 1.2.7.
 
 
 ## [0.0.12] -2017-01-27

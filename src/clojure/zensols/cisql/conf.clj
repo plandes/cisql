@@ -3,7 +3,7 @@
     zensols.cisql.conf
   (:require [clojure.string :as str]
             [clojure.tools.logging :as log])
-  (:require [cisql.version :as ver]))
+  (:require [zensols.cisql.version :as ver]))
 
 (def ^:private config-data
   (atom {:gui false

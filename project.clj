@@ -5,11 +5,14 @@
             :url "https://www.apache.org/licenses/LICENSE-2.0"
             :distribution :repo}
   :plugins [[lein-codox "0.10.1"]
-            [org.clojars.cvillecsteele/lein-git-version "1.0.3"]]
+            [org.clojars.cvillecsteele/lein-git-version "1.2.7"]]
   :codox {:metadata {:doc/format :markdown}
           :project {:name "SQL CLI Interface"}
           :output-path "target/doc/codox"
           :source-uri "https://github.com/plandes/cisql/blob/v{version}/{filepath}#L{line}"}
+  :git-version {:root-ns "zensols.cisql"
+                :path "src/clojure/zensols/cisql"
+                :version-cmd "git describe --match v*.* --abbrev=4 --dirty=-dirty"}
   :source-paths ["src/clojure"]
   :java-source-paths ["src/java"]
   :javac-options ["-Xlint:unchecked"]
@@ -18,7 +21,6 @@
                log4j/log4j
                ch.qos.logback/logback-classic]
   :dependencies [[org.clojure/clojure "1.8.0"]
-
                  ;; api
                  [org.clojure/java.jdbc "0.3.7"]
 
@@ -39,7 +41,7 @@
                  [org.apache.logging.log4j/log4j-jcl "2.7"]
 
                  ;; command line
-                 [com.zensols.tools/actioncli "0.0.13"]]
+                 [com.zensols.tools/actioncli "0.0.15"]]
   :pom-plugins [[org.codehaus.mojo/appassembler-maven-plugin "1.6"
                  {:configuration ([:programs
                                    [:program

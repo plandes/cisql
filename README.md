@@ -17,6 +17,12 @@ Features include:
 * Distribution is a one Java Jar file with all dependencies.
 
 
+## Obtaining
+
+The latest release binaries are
+available [here](https://github.com/plandes/cisql/releases/latest).
+
+
 ## Documentation
 
 Additional [documentation](https://plandes.github.io/cisql/codox/index.html).
@@ -74,6 +80,10 @@ The last command creates a new `.csv` spreadsheet file shown below:
 
 ![Spreadsheet .csv](https://plandes.github.io/cisql/img/spreadsheet-export.png)
 
+
+## Changelog
+
+An extensive changelog is available [here](CHANGELOG.md).
 
 
 ## License
