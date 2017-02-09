@@ -194,7 +194,6 @@ downloads the JDBC drivers."
    :app (fn [{:keys [name] :as opts} & args]
           (log/infof "loading driver: %s" name)
           (with-exception
-            (lu/change-log-level "debug")
             (let [flat (opts-to-flat opts)]
               (load-dependencies flat)
               (put-flat flat))))})
