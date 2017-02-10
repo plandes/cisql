@@ -41,7 +41,9 @@ downloads the JDBC drivers."
   [{:keys [subname class] :as flat}]
   (let [subname (if (empty? subname)
                   default-subname
-                  (eval (read-string subname)))
+                  (try (eval (read-string subname))
+                       (catch Exception e
+                         subname)))
         class (if-not (empty? class) class)]
     (->> {:subname subname :class class}
          (merge flat)
@@ -61,7 +63,11 @@ downloads the JDBC drivers."
   []
   (->> (pref/driver-metas)
        (map (fn [[name flat]]
-              (flat-to-meta (assoc flat :name name))))
+              (try (flat-to-meta (assoc flat :name name))
+                   (catch Exception e
+                     (log/warn e)
+                     nil))))
+       (remove nil?)
        (concat (list (resource-driver-meta)))
        (apply merge)))
 
@@ -90,11 +96,15 @@ downloads the JDBC drivers."
   "Create a Clojure JDBC database spec (`db-spec`)."
   [conn {:keys [subname port class] :as meta}]
   (let [subname-context (assoc conn :port port)]
-    (->> (subname subname-context)
+    (->> (if (string? subname)
+           subname
+           (subname subname-context))
          (hash-map :subname)
          (merge (select-keys meta [:subprotocol])
                 (select-keys conn [:user :password])
-                (if class {:class class})))))
+                (when class
+                  (Class/forName class)
+                  {:class class})))))
 
 (defn db-spec
   "Create a database spec used by the Clojure JDBC API.  If the JDBC driver for
@@ -132,6 +142,7 @@ downloads the JDBC drivers."
          (select-keys opts))))
 
 (defn- put-flat [flat]
+  (log/debugf "adding <%s>" (pr-str flat))
   (->> (pref/driver-metas)
        (merge (flat-to-map flat))
        pref/set-driver-metas)
@@ -175,7 +186,8 @@ downloads the JDBC drivers."
   "CLI command to install a JDBC driver."
   {:description "Install a driver to the user's local JDBC registry"
    :options
-   [(name-option false)
+   [(lu/log-level-set-option)
+    (name-option false)
     ["-s" "--subprotocol" "subprotocol (ex: mysql)"
      :required "<string>"]
     [nil "--subname" "subname or create expression (ex: #(io/file (:database %)))"
@@ -190,7 +202,8 @@ downloads the JDBC drivers."
      :required "<number>"
      :parse-fn read-string
      :validate [#(< 0 % 0x10000) "Must be a number between 0 and 65536"]]
-    ["-c" "--class" "JDBC driver class (ex: org.sqlite.JDBC)"]]
+    ["-c" "--class" "JDBC driver class (ex: org.sqlite.JDBC)"
+     :required "<string>"]]
    :app (fn [{:keys [name] :as opts} & args]
           (log/infof "loading driver: %s" name)
           (with-exception
