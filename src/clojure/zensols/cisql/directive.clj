@@ -2,21 +2,32 @@
       :author "Paul Landes"}
     zensols.cisql.directive
   (:require [clojure.tools.logging :as log])
-  (:require [zensols.actioncli.log4j2 :as lu])
+  (:require [zensols.actioncli.log4j2 :as lu]
+            [zensols.actioncli.parse :as parse])
   (:require [zensols.cisql.conf :as conf]
             [zensols.cisql.read :as r]
             [zensols.cisql.db-access :as db]
             [zensols.cisql.table-export :as te]))
 
 (declare print-help)
-
 (declare init-grammer)
+(declare connect-help)
+(declare connect)
 
 (def ^:private directives
   [{:name "help"
     :arg-count 0
     :fn (fn [& _]
           (print-help))}
+   {:name "connect"
+    :arg-count "*"
+    :usage "<help|[options]>"
+    :desc "connect to a database (try 'help')"
+    :fn (fn [_ args]
+          (log/debugf "connect: args: <%s>" args)
+          (if (or (empty? args) (= "help" (first args)))
+            (connect-help)
+            (connect args)))}
    {:name "sh"
     :arg-count ".."
     :usage "[variable]"
@@ -68,7 +79,7 @@
    {:name "cat"
     :arg-count 1
     :usage "<catalog>"
-    :desc "show the schema/catalog of the database"
+    :desc "set the schema/catalog of the database"
     :fn (fn [_ [cat-name]]
           (db/set-catalog cat-name))}
    {:name "export"
@@ -110,6 +121,21 @@
   (println)
   (println "variables:")
   (conf/print-key-desc))
+
+(defn- connect-help []
+  (binding [parse/*rethrow-error* false
+            parse/*include-program-in-errors* false]
+    (-> '(zensols.cisql.interactive interactive-directive)
+        parse/single-action-context
+        parse/print-action-help)))
+
+(defn- connect [args]
+  (binding [parse/*rethrow-error* false
+            parse/*include-program-in-errors* false]
+    (-> '(zensols.cisql.interactive interactive-directive)
+        parse/single-action-context
+        (parse/process-arguments args))
+    (println (format "configured: %s" (db/db-id-format :only-url? true)))))
 
 (defn- grammer []
   (->> directives

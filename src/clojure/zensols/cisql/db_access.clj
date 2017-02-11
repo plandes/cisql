@@ -43,17 +43,21 @@
                  {:user (.getUserName dbmeta)
                   :url (.getURL dbmeta)}))))))
 
-(defn- db-id-format
+(defn db-id-format
   "Get a string formatted for the DB."
-  ([]
-   (db-id-format {:user? true}))
-  ([{user? :user?}]
-   (let [{user :user url :url} (db-info)]
-     (format "%s%s"
-             (if (and user? user)
-               (str (second (re-find #"^(.*)@.*$" user)) "@")
-               "")
-             (or (second (re-find #"jdbc:.*?://?(.*?)$" url)) url)))))
+  [& {:keys [user? only-url?]
+      :or {user? true}}]
+  (let [{user :user url :url} (db-info)]
+    (cond only-url? url
+          true
+          (format "%s%s"
+                  (if (and user? user)
+                    (str (second (re-find #"^(.*)@.*$" user)) "@")
+                    "")
+                  (or (second (re-find #"jdbc:.*?://?(.*?)$" url)) url)))))
+
+(defn connected? []
+  (not (nil? @dbspec)))
 
 (defn set-db-spec [spec]
   (reset! dbspec spec))

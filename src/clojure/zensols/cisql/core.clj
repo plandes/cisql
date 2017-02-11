@@ -34,7 +34,7 @@
    :print-help-fn print-help))
 
 (defn -main [& args]
-  ;(lu/configure "cisql-log4j2.xml")
+  (lu/configure "cisql-log4j2.xml")
   (parse/set-program-name "cisql")
   (-> (create-action-context)
       (parse/process-arguments args)))

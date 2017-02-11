@@ -22,7 +22,7 @@
    :linesep "tell where to end a query and then send"
    :prompt "a format string for the promp"
    :errorlong "if true provide more error information"
-   :loglev "log level of the program (error, warn, info (default), debug, trace)"})
+   :loglev "log level of the program (error, warn, info, debug, trace)"})
 
 (def ^:private help-message
   "type 'help' to see a list of commands")

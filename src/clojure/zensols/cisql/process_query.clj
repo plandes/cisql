@@ -5,7 +5,7 @@
             [clojure.string :as str])
   (:import (java.io BufferedReader InputStreamReader StringReader))
   (:require [zensols.actioncli.log4j2 :as lu]
-            [zensols.actioncli.parse :as parse])
+            [zensols.actioncli.parse :as parse :refer (with-exception)])
   (:require [zensols.cisql.conf :as conf]
             [zensols.cisql.db-access :as db]
             [zensols.cisql.table-export :as te]
@@ -14,13 +14,15 @@
 
 (def ^:private last-query (atom nil))
 
-(defn- invoke [handle-fn query-data & args]
+(defn- invoke
+  "Invoke the directive or command-event-loop function and handle errors."
+  [handle-fn query-data & args]
   (log/debugf "invoke: %s <%s>" handle-fn (pr-str query-data))
-  (try
-    (apply handle-fn query-data args)
-    (catch Exception e
-      (binding [parse/*dump-jvm-on-error* false]
-        (try (parse/handle-exception e) (catch Exception e))))))
+  (binding [parse/*dump-jvm-on-error* false
+            parse/*rethrow-error* false
+            parse/*include-program-in-errors* false]
+    (with-exception
+      (apply handle-fn query-data args))))
 
 (defn process-queries
   "Process a line of user input and use callback functions **dir-fns**, which
@@ -62,19 +64,27 @@
       (when (= :end-of-query directive)
         (recur (r/read-query))))))
 
+(defn- assert-connection []
+  (let [conn? (db/connected?)]
+    (log/debugf "connected: %s" conn?)
+    (if-not conn?
+      (binding [parse/*include-program-in-errors* false]
+        (->> ["no connection; 'connect help'"]
+             parse/print-error-message)))
+    conn?))
+
 (defn start-event-loop
   "Start the command event loop using standard in/out."
-  [dbspec]
-  (log/debug "staring loop")
-  (db/set-db-spec dbspec)
+  []
   (di/init-grammer)
   (while true
     (try
       (binding [r/*std-in* (BufferedReader. (InputStreamReader. System/in))]
         (process-queries
          {:end-of-query (fn [{:keys [query]}]
-                          (db/execute-query query)
-                          (if query (reset! last-query query)))
+                          (when (assert-connection)
+                            (db/execute-query query)
+                            (if query (reset! last-query query))))
           :end-of-session (fn [_]
                          (println "exiting...")
                          (System/exit 0))
