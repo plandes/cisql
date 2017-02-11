@@ -118,36 +118,6 @@ downloads the JDBC drivers."
       (log/debugf "spec: %s" (pr-str spec))
       spec)))
 
-;; (require '[clojure.java.jdbc :as jdbc])
-;; (driver-meta "mysql")
-
-;; (db-spec {:name "csv" :database "/d"})
-
-;; (-> (db-spec {:name "csv" :database "/d"})
-;;     (jdbc/query "select * from a"))
-;; (reset)
-
-
-;; (-> (db-spec {:name "postgres" :database "puser" :password "pass" :user "puser" :host "192.168.99.100"})
-;;     (jdbc/query "select * from tmp"))
-
-;; (-> {:connection-uri "jdbc:postgresql://192.168.99.100:5432/puser"
-;;      :factory #(DriverManager/getConnection (:connection-uri %)
-;;                                             (as-properties (dissoc % :connection-url)))
-;;      :password "pass"
-;;      :user "puser"}
-;;     (jdbc/query "select * from tmp"))
-
-;; (-> (db-spec {:name "csv" :database "/d"})
-;;     (jdbc/query "select * from a")
-;;     )
-
-;; (-> {:subprotocol "relique:csv" :subname "/d" :classname "org.relique.jdbc.csv.CsvDriver"}                         ;{:name "csv" :database "/d"}
-    
-;;     ;(java.net.URI.)
-;;     (jdbc/query "select * from a")
-;;     )
-
 (defn registered-names
   "Return a sequence of provided drivers.  These are the default driver
   information (not actual JDBC drivers)."
@@ -169,18 +139,6 @@ downloads the JDBC drivers."
          (select-keys opts)
          (#(rename-keys % {:port :default-port}))
          (#(assoc % :group group :artifact artifact :version version)))))
-
-;; (let [opts {:name "csv"
-;;             :port 12345
-;;             :class "org.relique.jdbc.csv.CsvDriver"
-;;             :dependency "net.sourceforge.csvjdbc/csvjdbc/1.0.28"
-;;             :url "jdbc:relique:csv:%5$s"}]
-;;   (->> (opts-to-flat opts)
-;;        put-flat))
-
-;; (pref/clear)
-
-
 
 (defn- put-flat [flat]
   (log/debugf "adding <%s>" (pr-str flat))
