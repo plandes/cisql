@@ -23,10 +23,10 @@
                    parse/*include-program-in-errors* false]
            (let [ctx (-> (list ns-sym func-sym)
                          parse/single-action-context)]
-             (if (or (empty? args) (= "help" (first args)))
+             (if (= "help" (first args))
                (parse/print-action-help ctx)
-               (->> (parse/process-arguments ctx args)
-                    (#(println "configured" %)))))))})
+               (let [res (parse/process-arguments ctx args)]
+                 (if res (println "configured" (:connection-uri res))))))))})
 
 (defn- export [query last-query csv-name]
   (log/debugf "last query: %s" last-query)
@@ -83,6 +83,15 @@
           (print-help))}
    (command-line-directive "connect" "connect to a database (try 'help')"
                            'zensols.cisql.interactive 'interactive-directive)
+   (command-line-directive "newdrv" "add a JDBC driver (try 'help')"
+                           'zensols.cisql.spec 'driver-add-command)
+   (command-line-directive "purgedrv" "purge custom JDBC driver configuration"
+                           'zensols.cisql.spec 'driver-user-registry-purge-command)
+   {:name "listdrv"
+    :arg-count 0
+    :desc "list all registered JDBC drivers"
+    :fn (fn [& _]
+          (spec/print-drivers))}
    {:name "sh"
     :arg-count ".."
     :usage "[variable]"
@@ -120,8 +129,8 @@
                              key-name oldval nextval))))}
    {:name "loglevel"
     :arg-count 1
-    :usage "<error|warn|info|debug|trace>"
-    :desc "toggle a boolean variable"
+    :usage "<level>"
+    :desc "set logging verbosity (<error|warn|info|debug|trace>)"
     :fn (fn [_ [level]]
           (lu/change-log-level level)
           (println (format "set log level to %s" level)))}
@@ -145,11 +154,6 @@
     :desc "set the schema/catalog of the database"
     :fn (fn [_ [cat-name]]
           (db/set-catalog cat-name))}
-   {:name "drivers"
-    :arg-count 0
-    :desc "list all registered JDBC drivers"
-    :fn (fn [& _]
-          (spec/print-drivers))}
    {:name "export"
     :arg-count 1
     :usage "<csv file>"

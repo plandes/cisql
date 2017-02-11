@@ -2,6 +2,7 @@
       :author "Paul Landes"}
   zensols.cisql.pref
   (:import (com.zensols.gui.pref PrefSupport))
+  (:require [clojure.tools.logging :as log])
   (:require [zensols.actioncli.dynamic :refer (defa-)]))
 
 (defa- pref-inst)
@@ -22,6 +23,7 @@
       eval))
 
 (defn set-driver-metas [metas]
+  (log/debugf "set driver metas: <%s>" (pr-str metas))
   (doto (-> (pref-support)
             .getPreferences)
     (.put driver-config-prop (str "(quote " (pr-str metas) ")"))

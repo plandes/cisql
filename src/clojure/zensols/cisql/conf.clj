@@ -12,6 +12,7 @@
          :prompt " %1$s > "
          :end-directive "exit"
          :help-directive "help"
+         :prex false
          :col 80}))
 
 (def ^:private parse-keys
@@ -22,7 +23,8 @@
    :linesep "tell where to end a query and then send"
    :prompt "a format string for the promp"
    :errorlong "if true provide more error information"
-   :loglev "log level of the program (error, warn, info, debug, trace)"})
+   :loglev "log level of the program (error, warn, info, debug, trace)"
+   :prex "print exception stack traces"})
 
 (def ^:private help-message
   "type 'help' to see a list of commands")

@@ -19,7 +19,7 @@
   [handle-fn query-data & args]
   (log/debugf "invoke: %s <%s>" handle-fn (pr-str query-data))
   (binding [parse/*dump-jvm-on-error* false
-            parse/*rethrow-error* false
+            parse/*rethrow-error* (conf/config :prex)
             parse/*include-program-in-errors* false]
     (with-exception
       (apply handle-fn query-data args))))
@@ -41,7 +41,7 @@
           directives (di/directives-by-name)]
       (log/tracef "directive: %s" directive)
       (cond dir-fn
-            (dir-fn query-data)
+            (invoke dir-fn query-data)
             (map? directive)
             (let [{:keys [name args]} directive
                   {:keys [fn]} (get directives (clojure.core/name name))]

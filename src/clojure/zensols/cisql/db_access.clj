@@ -1,10 +1,11 @@
 (ns zensols.cisql.db-access
+  (:import [sun.misc Signal SignalHandler])
+  (:import [java.io BufferedReader InputStreamReader StringReader]
+           [java.sql SQLException])
   (:require [clojure.tools.logging :as log]
             [clojure.string :as str]
             [clojure.java.jdbc :as jdbc]
             [clojure.pprint :refer (pprint print-table)])
-  (:import (java.io BufferedReader InputStreamReader StringReader)
-           (java.sql SQLException))
   (:import (com.zensols.gui.tabres ResultSetFrame))
   (:require [zensols.tabres.display-results :as dis])
   (:require [zensols.cisql.conf :as conf]))
@@ -135,10 +136,22 @@
         (catch SQLException e
           (log/error (format-sql-exception e)))))))
 
+;; (def ^:private executing-thread (atom nil))
+
+;; (defn- interrupt [signal]
+;;   (log/infof "interruptwing with signal: %s" signal)
+;;   (.interrupt @executing-thread))
+
+;; (->> (proxy [SignalHandler] []
+;;        (handle [s]
+;;          (interrupt s)))
+;;      (Signal/handle (Signal. "INT")))
+
 (defn execute-query
   ([query]
    (execute-query query nil))
   ([query query-handler-fn]
+   (reset! executing-thread (Thread/currentThread))
    (jdbc/with-db-connection [db @dbspec]
      (let [conn (resolve-connection db)
            stmt (.createStatement conn)]

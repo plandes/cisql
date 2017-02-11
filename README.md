@@ -31,7 +31,7 @@ Additional [documentation](https://plandes.github.io/cisql/codox/index.html).
 ## Usage
 
 ```sql
-$ java -jar target/cisql-0.0.10-standalone.jar --subprotocol sqlite --database awards.sqlite --config 'linesep=;,gui=false'
+$ java -jar target/cisql.jar -n sqlite -d path/to/awards.sqlite --config 'linesep=;,gui=false'
 Clojure Interactive SQL (cisql) v0.0.10
 (C) Paul Landes 2015 - 2017
 type 'help' to see a list of commands

@@ -2,11 +2,13 @@
 downloads the JDBC drivers."
       :author "Paul Landes"}
     zensols.cisql.spec
-  (:import (java.text MessageFormat))
+  (:import [java.sql DriverManager]
+           [java.util Properties])
   (:require [clojure.java.io :as io]
             [clojure.tools.logging :as log]
             [clojure.string :as s]
             [clojure.set :refer (rename-keys)]
+            [clojure.java.jdbc :as jdbc]
             [clojure.data.csv :as csv])
   (:require [cemerick.pomegranate :refer (add-dependencies)])
   (:require [zensols.actioncli.dynamic :refer (defa-) :as dyn]
@@ -82,6 +84,15 @@ downloads the JDBC drivers."
            {:connection-uri url
             :class class})))
 
+(defn- ^Properties as-properties [m]
+  (let [p (Properties.)]
+    (doseq [[k v] m]
+      (.setProperty p (jdbc/as-sql-name identity k)
+                    (if (instance? clojure.lang.Named v)
+                      (jdbc/as-sql-name identity v)
+                      (str v))))
+    p))
+
 (defn db-spec
   "Create a database spec used by the Clojure JDBC API.  If the JDBC driver for
   the spec doesn't exist it is downloaded and then class loaded.
@@ -97,10 +108,45 @@ downloads the JDBC drivers."
   (let [meta (driver-meta (:name conn))]
     (log/debugf "spec meta: %s" (pr-str meta))
     (load-dependencies meta)
-    (let [spec (->> (create-db-spec conn meta)
-                    :connection-uri)]
+    (Class/forName (:class meta))
+    (let [spec (create-db-spec conn meta)
+          props (as-properties (dissoc spec :connection-url))
+          factory #(DriverManager/getConnection (:connection-uri %) props)
+          spec (-> spec
+                   (rename-keys {:class :classname})
+                   (assoc :factory factory))]
       (log/debugf "spec: %s" (pr-str spec))
       spec)))
+
+;; (require '[clojure.java.jdbc :as jdbc])
+;; (driver-meta "mysql")
+
+;; (db-spec {:name "csv" :database "/d"})
+
+;; (-> (db-spec {:name "csv" :database "/d"})
+;;     (jdbc/query "select * from a"))
+;; (reset)
+
+
+;; (-> (db-spec {:name "postgres" :database "puser" :password "pass" :user "puser" :host "192.168.99.100"})
+;;     (jdbc/query "select * from tmp"))
+
+;; (-> {:connection-uri "jdbc:postgresql://192.168.99.100:5432/puser"
+;;      :factory #(DriverManager/getConnection (:connection-uri %)
+;;                                             (as-properties (dissoc % :connection-url)))
+;;      :password "pass"
+;;      :user "puser"}
+;;     (jdbc/query "select * from tmp"))
+
+;; (-> (db-spec {:name "csv" :database "/d"})
+;;     (jdbc/query "select * from a")
+;;     )
+
+;; (-> {:subprotocol "relique:csv" :subname "/d" :classname "org.relique.jdbc.csv.CsvDriver"}                         ;{:name "csv" :database "/d"}
+    
+;;     ;(java.net.URI.)
+;;     (jdbc/query "select * from a")
+;;     )
 
 (defn registered-names
   "Return a sequence of provided drivers.  These are the default driver
@@ -108,9 +154,10 @@ downloads the JDBC drivers."
   []
   (->> (driver-meta) keys))
 
-(defn- opts-to-flat [opts]
-  (let [manditory-keys [:name :subprotocol :group :artifact :version]
-        optional-keys [:port :class :subname]]
+(defn- opts-to-flat [{:keys [dependency] :as opts}]
+  (let [manditory-keys [:class :url :name]
+        optional-keys [:port]
+        [group artifact version] (s/split dependency #"/")]
     (->> manditory-keys
          (map (fn [okey]
                 (if-not (contains? opts okey)
@@ -119,7 +166,21 @@ downloads the JDBC drivers."
                                    :key okey})))
                 okey))
          (concat optional-keys)
-         (select-keys opts))))
+         (select-keys opts)
+         (#(rename-keys % {:port :default-port}))
+         (#(assoc % :group group :artifact artifact :version version)))))
+
+;; (let [opts {:name "csv"
+;;             :port 12345
+;;             :class "org.relique.jdbc.csv.CsvDriver"
+;;             :dependency "net.sourceforge.csvjdbc/csvjdbc/1.0.28"
+;;             :url "jdbc:relique:csv:%5$s"}]
+;;   (->> (opts-to-flat opts)
+;;        put-flat))
+
+;; (pref/clear)
+
+
 
 (defn- put-flat [flat]
   (log/debugf "adding <%s>" (pr-str flat))
@@ -141,7 +202,7 @@ downloads the JDBC drivers."
        (into (sorted-map))
        (map (fn [[name meta]]
               (let [fmt "  - %s: %s"]
-                (->> [:subprotocol :port :class]
+                (->> [:url :class]
                      (map #(format fmt
                                    (clojure.core/name %)
                                    (or (get meta %) "*none*")))
@@ -169,30 +230,26 @@ downloads the JDBC drivers."
   "CLI command to install a JDBC driver."
   {:description "Install a driver to the user's local JDBC registry"
    :options
-   [(lu/log-level-set-option)
-    (name-option false)
-    ["-s" "--subprotocol" "subprotocol (ex: mysql)"
-     :required "<string>"]
-    [nil "--subname" "subname or create expression (ex: #(io/file (:database %)))"
-     :required "<string>"]
-    ["-g" "--group" "maven group ID coordinate element (ex: org.mysql)"
-     :required "<string>"]
-    ["-a" "--artifact" "maven artifact ID coordinate element (ex: mysql-connector)"
-     :required "<string>"]
-    ["-v" "--version" "maven version ID coordinate element (ex: 5.1.35)"
+   [(name-option false)
+    ["-u" "--url" (str "the URL pattern defaults to "
+                       "jdbc:<name>://%1$s:%2$s@%3$s:%4$s/%5$s"
+                       " (substitued with user, password, port, host, database)")
      :required "<string>"]
     ["-p" "--port" "the default bound database port (ex: 3306)"
      :required "<number>"
      :parse-fn read-string
      :validate [#(< 0 % 0x10000) "Must be a number between 0 and 65536"]]
     ["-c" "--class" "JDBC driver class (ex: org.sqlite.JDBC)"
+     :required "<string>"]
+    ["-d" "--dependency" "maven group ID coordinate element (ex: org.mysql/mysql-connector/5.1.35)"
      :required "<string>"]]
    :app (fn [{:keys [name] :as opts} & args]
           (log/infof "loading driver: %s" name)
           (with-exception
             (let [flat (opts-to-flat opts)]
               (load-dependencies flat)
-              (put-flat flat))))})
+              (put-flat flat)
+              (reset))))})
 
 (def driver-user-registry-purge-command
   "CLI command to install a JDBC driver."
@@ -203,4 +260,5 @@ downloads the JDBC drivers."
           (with-exception
             (lu/change-log-level "info")
             (pref/clear)
+            (reset)
             (log/info "user's local JDBC registry purged")))})

@@ -1,4 +1,4 @@
 name,url,default-port,class,group,artifact,version
-mysql,jdbc:mysql://%1$s:%2$s@%3$s:%4$s/%5$s,3306,com.mysql.jdbc.Driver,mysql,mysql-connector-java,5.1.35
-postgres,jdbc:postgresql://%1$s:%2$s@%3$s:%4$s/%5$s,5432,org.postgresql.Driver,postgresql,postgresql,9.1-901-1.jdbc4
+mysql,jdbc:mysql://%3$s:%4$s/%5$s,3306,com.mysql.jdbc.Driver,mysql,mysql-connector-java,5.1.35
+postgres,jdbc:postgresql://%3$s:%4$s/%5$s,5432,org.postgresql.Driver,postgresql,postgresql,9.1-901-1.jdbc4
 sqlite,jdbc:sqlite:%5$s,,org.sqlite.JDBC,org.xerial,sqlite-jdbc,3.8.11.2
