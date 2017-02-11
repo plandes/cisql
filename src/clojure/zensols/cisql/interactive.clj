@@ -13,10 +13,9 @@ downloads the JDBC drivers."
             [zensols.cisql.conf :as conf]
             [zensols.cisql.db-access :as db]))
 
-(defn create-db-spec
-  [{:keys [name database] :as opts}]
-  (if (and name database)
-    (spec/db-spec (select-keys opts [:name :user :password :host :database]))))
+(defn create-db-spec [{:keys [name] :as opts}]
+  (log/debugf "creating db spec with opts: %s" opts)
+  (spec/db-spec (select-keys opts [:name :user :password :host :database])))
 
 (defn- configure [conf]
   (doseq [[k v] conf]
@@ -31,7 +30,7 @@ downloads the JDBC drivers."
   "CLI command to start an interactive session."
   {:description "Start an interactive session"
    :options
-   [(spec/name-option true)
+   [(spec/name-option false)
     ["-u" "--user <string>" "login name"
      :required "<string>"]
     ["-p" "--password <string>" "login password"
@@ -44,8 +43,12 @@ downloads the JDBC drivers."
      :validate [#(< 0 % 0x10000) "Must be a number between 0 and 65536"]]]
    :app (fn [{:keys [repl config] :as opts} & args]
           (with-exception
+            (if-not name
+              (-> "missing name (-n) option"
+                  (ex-info {:option "-n"})
+                  throw))
             (let [dbspec (create-db-spec opts)]
-              (log/debug "setting db spec: %s" (pr-str dbspec))
+              (log/debugf "setting db spec: %s" (pr-str dbspec))
               (if dbspec (db/set-db-spec dbspec)))))})
 
 (def interactive-command
@@ -60,15 +63,16 @@ downloads the JDBC drivers."
                               (map #(s/split % #"=") (s/split op #"\s*,\s*")))]
                  (repl/repl-port-set-option nil "--repl" nil)])
         vec)
-   :app (fn [{:keys [repl config] :as opts} & args]
+   :app (fn [{:keys [repl config name] :as opts} & args]
           (with-exception
-            (let [dbspec (create-db-spec opts)]
+            (let [dbspec (if name (create-db-spec opts))]
               (when repl
                 (log/infof "starting repl on port %d" repl)
                 (future (repl/run-server repl)))
               (and config (configure config))
               (conf/print-help)
-              (log/infof "connecting to %s..." (:subname dbspec))
+              (if dbspec
+                (log/infof "connecting to %s..." (:subname dbspec)))
               (log/debugf "dbspec: %s" dbspec)
               (if dbspec (db/set-db-spec dbspec))
               (log/debugf "setting db spec: %s" (pr-str dbspec))

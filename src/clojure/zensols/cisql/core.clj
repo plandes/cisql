@@ -14,11 +14,7 @@
     (println)
     (println (conf/format-intro))
     (println)
-    (println summary)
-    (println)
-    (print "Database subprotocols include:"
-           (s/join ", " (spec/registered-names)))
-    (flush)))
+    (println summary)))
 
 (defn- version-info []
   (println (format "%s (%s)" ver/version ver/gitref)))

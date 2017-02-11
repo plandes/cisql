@@ -22,12 +22,10 @@
       eval))
 
 (defn set-driver-metas [metas]
-  (-> (pref-support)
-      .getPreferences
-      (.remove driver-config-prop))
-  (-> (pref-support)
-      .getPreferences
-      (.put driver-config-prop (str "(quote " (pr-str metas) ")"))))
+  (doto (-> (pref-support)
+            .getPreferences)
+    (.put driver-config-prop (str "(quote " (pr-str metas) ")"))
+    (.sync)))
 
 (defn clear []
   (-> (pref-support)

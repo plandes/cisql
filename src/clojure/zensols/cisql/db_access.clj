@@ -47,7 +47,7 @@
   "Get a string formatted for the DB."
   [& {:keys [user? only-url?]
       :or {user? true}}]
-  (let [{user :user url :url} (db-info)]
+  (let [{:keys [user url]} (db-info)]
     (cond only-url? url
           true
           (format "%s%s"
@@ -71,7 +71,7 @@
              (fn [frame title orphaned?]
                (.setTitle frame
                           (format "%s: %s"
-                                  (db-id-format {:user? false})
+                                  (db-id-format :user? false)
                                   (or title @last-frame-label))))]
      (dis/orphan-frame label))))
 

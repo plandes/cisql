@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 - Refactor parsing/processing.
 - Move to instaparse for directive parsing.
+- URL centric JDBC connection configuration.
+
 
 ## [0.0.12] -2017-01-27
 ### Added
@@ -35,4 +37,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Build
 
 
-[Unreleased]: https://github.com/plandes/cisql/compare/v0.0.1...HEAD
+[Unreleased]: https://github.com/plandes/cisql/compare/v0.0.13...HEAD
+[0.0.12]: https://github.com/plandes/clj-mkproj/compare/v0.0.12...v0.0.13
+[0.0.11]: https://github.com/plandes/clj-mkproj/compare/v0.0.10...v0.0.11

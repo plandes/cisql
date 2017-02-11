@@ -6,6 +6,7 @@
             [zensols.actioncli.parse :as parse])
   (:require [zensols.cisql.conf :as conf]
             [zensols.cisql.read :as r]
+            [zensols.cisql.spec :as spec]
             [zensols.cisql.db-access :as db]
             [zensols.cisql.table-export :as te]))
 
@@ -13,6 +14,7 @@
 (declare init-grammer)
 (declare connect-help)
 (declare connect)
+(declare export)
 
 (def ^:private directives
   [{:name "help"
@@ -63,43 +65,44 @@
             (conf/set-config key nextval)
             (println (format "%s: %s -> %s"
                              key-name oldval nextval))))}
-   {:name "shtab"
+   {:name "loglevel"
     :arg-count 1
+    :usage "<error|warn|info|debug|trace>"
+    :desc "toggle a boolean variable"
+    :fn (fn [_ [level]]
+          (lu/change-log-level level)
+          (println (format "set log level to %s" level)))}
+   {:name "shtab"
+    :arg-count ".."
     :usage "[table]"
     :desc "show table metdata or all if no table given"
-    :fn (fn [_ [table]]
-          (db/show-table-metadata table))}
-   {:name "orphan"
+    :fn (fn [_ args]
+          (let [table (and (seq? args) (first args))]
+            (db/show-table-metadata table)))}
+   {:name "orph"
     :arg-count ".."
     :usage "[label]"
     :desc "orphan the current frame optionally giving it a label"
     :fn (fn [_ args]
-          (let [table (and (seq? args) (first args))]
-            (db/orphan-frame table)))}
+          (let [label (and (seq? args) (first args))]
+            (db/orphan-frame label)))}
    {:name "cat"
     :arg-count 1
     :usage "<catalog>"
     :desc "set the schema/catalog of the database"
     :fn (fn [_ [cat-name]]
           (db/set-catalog cat-name))}
+   {:name "drivers"
+    :arg-count 0
+    :desc "list all registered JDBC drivers"
+    :fn (fn [& _]
+          (spec/print-drivers))}
    {:name "export"
     :arg-count 1
     :usage "<csv file>"
     :desc "export the queued query to a CSV file"
     :fn (fn [{:keys [query last-query]} [csv-name]]
-          (log/debugf "last query: %s" last-query)
-          (let [to-export (or query last-query)]
-            (if-not to-export
-              (binding [*out* *err*]
-                (-> "no queued query (skip the query delimiter (%s) after SQL)"
-                    (format (conf/config :linesep))
-                    (ex-info {:query query
-                              :last-query last-query
-                              :csv-name csv-name})
-                    throw)))
-            (if-not query
-              (println "no queued query so using the last executed"))
-            (te/export-table-csv to-export csv-name)))}])
+          (export query last-query csv-name))}])
 
 (defn- print-command-help []
   (let [decls (->> directives
@@ -134,8 +137,23 @@
             parse/*include-program-in-errors* false]
     (-> '(zensols.cisql.interactive interactive-directive)
         parse/single-action-context
-        (parse/process-arguments args))
-    (println (format "configured: %s" (db/db-id-format :only-url? true)))))
+        (parse/process-arguments args)
+        (#(println "configured" %)))))
+
+(defn- export [query last-query csv-name]
+  (log/debugf "last query: %s" last-query)
+  (let [to-export (or query last-query)]
+    (if-not to-export
+      (binding [*out* *err*]
+        (-> "no queued query (skip the query delimiter (%s) after SQL)"
+            (format (conf/config :linesep))
+            (ex-info {:query query
+                      :last-query last-query
+                      :csv-name csv-name})
+            throw)))
+    (if-not query
+      (println "no queued query so using the last executed"))
+    (te/export-table-csv to-export csv-name)))
 
 (defn- grammer []
   (->> directives

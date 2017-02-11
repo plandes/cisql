@@ -8,3 +8,7 @@ all:		info
 include $(ZBHOME)/src/mk/compile.mk
 include $(ZBHOME)/src/mk/dist.mk
 include $(ZBHOME)/src/mk/release.mk
+
+.PHONY:	test
+test:
+	$(LEIN) test

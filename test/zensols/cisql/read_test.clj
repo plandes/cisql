@@ -18,7 +18,7 @@
 
 (deftest test-directive []
   (init-grammer-dir)
-  (is (= {:eoq? false, :sql "twoarg a1 a2"}
+  (is (= {:eoq? false, :directive [:twoarg "a1" "a2"]}
          (read-input "twoarg a1 a2")))
   (is (= {:eoq? false, :sql "twoarg arg"}
          (read-input "twoarg arg")))

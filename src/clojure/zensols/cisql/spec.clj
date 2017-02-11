@@ -2,6 +2,7 @@
 downloads the JDBC drivers."
       :author "Paul Landes"}
     zensols.cisql.spec
+  (:import (java.text MessageFormat))
   (:require [clojure.java.io :as io]
             [clojure.tools.logging :as log]
             [clojure.string :as s]
@@ -22,12 +23,6 @@ downloads the JDBC drivers."
 
 (dyn/register-purge-fn reset)
 
-(defn- default-subname
-  "Create a JDBC subname using the port, host and database keys."
-  [{:keys [host port database]}]
-  (let [port (if port (format ":%s" port) "")]
-    (format "//%s%s/%s" host port database)))
-
 (defn- rows-to-maps
   [rows]
   (let [header (->> rows first (map keyword))]
@@ -37,36 +32,20 @@ downloads the JDBC drivers."
 (defn- flat-to-map [flat]
   {(:name flat) (dissoc flat :name)})
 
-(defn- flat-to-meta
-  [{:keys [subname class] :as flat}]
-  (let [subname (if (empty? subname)
-                  default-subname
-                  (try (eval (read-string subname))
-                       (catch Exception e
-                         subname)))
-        class (if-not (empty? class) class)]
-    (->> {:subname subname :class class}
-         (merge flat)
-         flat-to-map)))
-
 (defn- resource-driver-meta
   "Parse the CSV resource JDBC driver registry."
   []
   (with-open [reader (io/reader (io/resource "driver.csv"))]
     (->> (csv/read-csv reader)
          rows-to-maps
-         (map flat-to-meta)
+         (map (fn [mrow]
+                {(:name mrow) (dissoc mrow :name)}))
          (apply merge))))
 
 (defn- create-driver-meta
   "Create the driver metadata by parsing the driver information CSV."
   []
   (->> (pref/driver-metas)
-       (map (fn [[name flat]]
-              (try (flat-to-meta (assoc flat :name name))
-                   (catch Exception e
-                     (log/warn e)
-                     nil))))
        (remove nil?)
        (concat (list (resource-driver-meta)))
        (apply merge)))
@@ -94,17 +73,14 @@ downloads the JDBC drivers."
 
 (defn- create-db-spec
   "Create a Clojure JDBC database spec (`db-spec`)."
-  [conn {:keys [subname port class] :as meta}]
-  (let [subname-context (assoc conn :port port)]
-    (->> (if (string? subname)
-           subname
-           (subname subname-context))
-         (hash-map :subname)
-         (merge (select-keys meta [:subprotocol])
-                (select-keys conn [:user :password])
-                (when class
-                  (Class/forName class)
-                  {:class class})))))
+  [{:keys [user password port host database] :as conn}
+   {:keys [url default-port class] :as meta}]
+  (let [host (or host "localhost")
+        port (or port default-port)
+        url (format url user password host port database)]
+    (merge (select-keys conn [:user :password])
+           {:connection-uri url
+            :class class})))
 
 (defn db-spec
   "Create a database spec used by the Clojure JDBC API.  If the JDBC driver for
@@ -119,8 +95,12 @@ downloads the JDBC drivers."
   * **:database** the database name"
   [conn]
   (let [meta (driver-meta (:name conn))]
+    (log/debugf "spec meta: %s" (pr-str meta))
     (load-dependencies meta)
-    (create-db-spec conn meta)))
+    (let [spec (->> (create-db-spec conn meta)
+                    :connection-uri)]
+      (log/debugf "spec: %s" (pr-str spec))
+      spec)))
 
 (defn registered-names
   "Return a sequence of provided drivers.  These are the default driver
@@ -173,14 +153,17 @@ downloads the JDBC drivers."
                      (s/join \newline)))))
        (s/join (str \newline \newline))))
 
+(defn print-drivers []
+  (with-exception
+    (println "# Driver Registry")
+    (println (driver-describe))))
+
 (def driver-describe-command
   "CLI command to list drivers currently installed."
   {:description "List drivers currently installed"
    :options []
    :app (fn [opts & args]
-          (with-exception
-            (println "# Driver Registry")
-            (println (driver-describe))))})
+          (print-drivers))})
 
 (def driver-add-command
   "CLI command to install a JDBC driver."
