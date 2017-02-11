@@ -10,26 +10,79 @@
             [zensols.cisql.db-access :as db]
             [zensols.cisql.table-export :as te]))
 
-(declare print-help)
-(declare init-grammer)
-(declare connect-help)
-(declare connect)
-(declare export)
+(declare directives)
 
-(def ^:private directives
+(defn- command-line-directive [name desc ns-sym func-sym]
+  {:name name
+   :arg-count "*"
+   :usage "<help|[options]>"
+   :desc desc
+   :fn (fn [_ args]
+         (log/debugf "%s: args: <%s>" name args)
+         (binding [parse/*rethrow-error* false
+                   parse/*include-program-in-errors* false]
+           (let [ctx (-> (list ns-sym func-sym)
+                         parse/single-action-context)]
+             (if (or (empty? args) (= "help" (first args)))
+               (parse/print-action-help ctx)
+               (->> (parse/process-arguments ctx args)
+                    (#(println "configured" %)))))))})
+
+(defn- export [query last-query csv-name]
+  (log/debugf "last query: %s" last-query)
+  (let [to-export (or query last-query)]
+    (if-not to-export
+      (binding [*out* *err*]
+        (-> "no queued query (skip the query delimiter (%s) after SQL)"
+            (format (conf/config :linesep))
+            (ex-info {:query query
+                      :last-query last-query
+                      :csv-name csv-name})
+            throw)))
+    (if-not query
+      (println "no queued query so using the last executed"))
+    (te/export-table-csv to-export csv-name)))
+
+(defn- print-command-help []
+  (let [decls (->> (directives)
+                   (map (fn [{:keys [name usage desc]}]
+                          (when desc
+                            {:decl (str name " " usage)
+                             :desc desc})))
+                   (remove nil?))
+        space (->> decls (map #(-> % :decl count)) (reduce max) (max 0) (+ 2))]
+    (->> decls
+         (map (fn [{:keys [decl desc]}]
+                (let [fmt (str "%-" space "s %s")]
+                  (println (format fmt decl desc)))))
+         doall)))
+
+(defn- print-help []
+  (println "commands:")
+  (print-command-help)
+  (println)
+  (println "variables:")
+  (conf/print-key-desc))
+
+(defn- grammer []
+  (->> (directives)
+       (map #(select-keys % [:name :arg-count]))))
+
+(defn init-grammer []
+  (r/set-grammer (conf/config :linesep) (grammer)))
+
+(defn directives-by-name []
+  (let [dirs (directives)]
+   (zipmap (map :name (directives))
+           (map #(dissoc % :name) dirs))))
+
+(defn- directives []
   [{:name "help"
     :arg-count 0
     :fn (fn [& _]
           (print-help))}
-   {:name "connect"
-    :arg-count "*"
-    :usage "<help|[options]>"
-    :desc "connect to a database (try 'help')"
-    :fn (fn [_ args]
-          (log/debugf "connect: args: <%s>" args)
-          (if (or (empty? args) (= "help" (first args)))
-            (connect-help)
-            (connect args)))}
+   (command-line-directive "connect" "connect to a database (try 'help')"
+                           'zensols.cisql.interactive 'interactive-directive)
    {:name "sh"
     :arg-count ".."
     :usage "[variable]"
@@ -103,65 +156,3 @@
     :desc "export the queued query to a CSV file"
     :fn (fn [{:keys [query last-query]} [csv-name]]
           (export query last-query csv-name))}])
-
-(defn- print-command-help []
-  (let [decls (->> directives
-                   (map (fn [{:keys [name usage desc]}]
-                          (when desc
-                            {:decl (str name " " usage)
-                             :desc desc})))
-                   (remove nil?))
-        space (->> decls (map #(-> % :decl count)) (reduce max) (max 0) (+ 2))]
-    (->> decls
-         (map (fn [{:keys [decl desc]}]
-                (let [fmt (str "%-" space "s %s")]
-                  (println (format fmt decl desc)))))
-         doall)))
-
-(defn- print-help []
-  (println "commands:")
-  (print-command-help)
-  (println)
-  (println "variables:")
-  (conf/print-key-desc))
-
-(defn- connect-help []
-  (binding [parse/*rethrow-error* false
-            parse/*include-program-in-errors* false]
-    (-> '(zensols.cisql.interactive interactive-directive)
-        parse/single-action-context
-        parse/print-action-help)))
-
-(defn- connect [args]
-  (binding [parse/*rethrow-error* false
-            parse/*include-program-in-errors* false]
-    (-> '(zensols.cisql.interactive interactive-directive)
-        parse/single-action-context
-        (parse/process-arguments args)
-        (#(println "configured" %)))))
-
-(defn- export [query last-query csv-name]
-  (log/debugf "last query: %s" last-query)
-  (let [to-export (or query last-query)]
-    (if-not to-export
-      (binding [*out* *err*]
-        (-> "no queued query (skip the query delimiter (%s) after SQL)"
-            (format (conf/config :linesep))
-            (ex-info {:query query
-                      :last-query last-query
-                      :csv-name csv-name})
-            throw)))
-    (if-not query
-      (println "no queued query so using the last executed"))
-    (te/export-table-csv to-export csv-name)))
-
-(defn- grammer []
-  (->> directives
-       (map #(select-keys % [:name :arg-count]))))
-
-(defn init-grammer []
-  (r/set-grammer (conf/config :linesep) (grammer)))
-
-(defn directives-by-name []
-  (zipmap (map :name directives)
-          (map #(dissoc % :name) directives)))
