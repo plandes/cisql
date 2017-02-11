@@ -12,9 +12,10 @@
     </appenders>
 
     <loggers>
-        <logger name="zensols.cisql" level="info"/>
+        <logger name="zensols.cisql" level="warn"/>
         <root level="warn">
-            <appenderRef ref="repl"/>
+            <appenderRef ref="console"/>
+            <!--appenderRef ref="repl"/-->
         </root>
     </loggers>
 </configuration>

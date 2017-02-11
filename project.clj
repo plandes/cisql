@@ -34,6 +34,9 @@
                  [com.zensols.gui/tabres "0.0.6"]
                  [com.zensols.gui/pref "0.0.2"]
 
+                 ;; mnemonic DSL
+                 [instaparse "1.4.5"]
+
                  ;; logging: log4j2
                  [org.apache.logging.log4j/log4j-api "2.7"]
                  [org.apache.logging.log4j/log4j-core "2.7"]

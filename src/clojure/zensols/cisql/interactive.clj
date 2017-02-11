@@ -54,7 +54,7 @@ downloads the JDBC drivers."
                 (log/infof "starting repl on port %d" repl)
                 (future (repl/run-server repl)))
               (and config (configure config))
-              (conf/print-help nil)
+              (conf/print-help)
               (log/infof "connecting to %s..." (:subname dbspec))
               (log/debugf "dbspec: %s" dbspec)
               (query/start-event-loop dbspec))))})

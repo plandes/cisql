@@ -7,11 +7,12 @@
 
 (def ^:private config-data
   (atom {:gui false
-         :linesep "go"
+         :linesep ";"
          :errorlong false
          :prompt " %1$s > "
          :end-directive "exit"
-         :help-directive "help"}))
+         :help-directive "help"
+         :col 80}))
 
 (def ^:private parse-keys
   #{:errorlong :gui})
@@ -26,15 +27,6 @@
 (def ^:private help-message
   "type 'help' to see a list of commands")
 
-(def ^:private help-commands
-  {:cf "<variable value>  configure (set) a 'variable' to 'value' (ie 'tg gui')"
-   :sh "[variable]        show 'variable', or show them all if not given"
-   :tg "<variable>        toggle a boolean variable"
-   :shtab "[table]        show table metdata or all if no table given"
-   :orph "[label]         orphan (spawn new next) window in GUI mode"
-   :cfcat "<catalog>      configure (set) the database (like 'use <db name>')"
-   :export "<filename>    export the last query as a CSV file"})
-
 (defn set-config [key value]
   (log/tracef "%s -> %s" key value)
   (let [val (if (and (contains? parse-keys key)
@@ -48,22 +40,19 @@
   (get @config-data key))
 
 (defn print-key-values []
-  (dorun (map (fn [[key val]]
-                (println (format "%s: %s "(name key) val)))
-              @config-data)))
+  (->> @config-data
+       (map (fn [[key val]]
+              (println (format "%s: %s "(name key) val))))
+       doall))
 
 (defn print-key-desc []
-  (dorun (map #(println (format "%-20s%s"
-                                (str (name %) ":")
-                                (get key-desc %)))
-              (keys key-desc))))
-
-(defn print-help-commands []
-  (dorun (map (fn [[key val]] 
-                (println (format "%s %s"
-                                 (name key)
-                                 val)))
-              help-commands)))
+  (let [dkeys (keys key-desc)
+        space (->> dkeys (map #(-> % name count)) (reduce max) (max 0) (+ 2))
+        fmt (str "%-" space "s %s")]
+    (->> key-desc
+         (map (fn [[k v]]
+                (println (format fmt (str (name k) ":") v))))
+         doall)))
 
 (defn format-version []
   (format "v%s " ver/version))
@@ -73,12 +62,7 @@
 (C) Paul Landes 2015 - 2017"
           (format-version)))
 
-(defn print-help [long?]
+(defn print-help []
   (println (format-intro))
-  (if-not long? (println help-message))
-  (when long?
-    (println "commands:")
-    (print-help-commands)
-    (println)
-    (println "variables:")
-    (print-key-desc)))
+  (println help-message))
+
