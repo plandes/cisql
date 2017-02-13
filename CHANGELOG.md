@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Connection in session
 - Adding CHANGELOG.md
 - Moving to lein-git-version 1.2.7.
+- Interrupt long blocking queries.
 
 ### Changed
 - Refactor parsing/processing.

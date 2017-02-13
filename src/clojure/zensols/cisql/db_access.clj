@@ -18,6 +18,8 @@
 
 (def ^:private last-frame-label (atom nil))
 
+(def ^:private interrupt-execute-query (atom nil))
+
 (defn- resolve-connection [db]
   (let [conn (jdbc/db-connection db)
         catalog @current-catalog]
@@ -136,22 +138,10 @@
         (catch SQLException e
           (log/error (format-sql-exception e)))))))
 
-;; (def ^:private executing-thread (atom nil))
-
-;; (defn- interrupt [signal]
-;;   (log/infof "interruptwing with signal: %s" signal)
-;;   (.interrupt @executing-thread))
-
-;; (->> (proxy [SignalHandler] []
-;;        (handle [s]
-;;          (interrupt s)))
-;;      (Signal/handle (Signal. "INT")))
-
-(defn execute-query
+(defn- execute-query-nowait
   ([query]
-   (execute-query query nil))
+   (execute-query-nowait query nil))
   ([query query-handler-fn]
-   (reset! executing-thread (Thread/currentThread))
    (jdbc/with-db-connection [db @dbspec]
      (let [conn (resolve-connection db)
            stmt (.createStatement conn)]
@@ -184,6 +174,27 @@
            (finally
              (.close stmt))))))))
 
+(defn- wait-for-atom-or-future [quit-atom fut timeout]
+  (log/debugf "future done? %s" (future-done? fut))
+  (letfn [(func []
+            (let [sym (gensym)]
+              (while (and (not @quit-atom)
+                          (= sym (deref fut timeout sym)))
+                (log/debugf "waiting on future...")))
+            (future-cancel fut)
+            (log/debugf "finished"))]
+    (log/debugf "starting future: %s %s %s" quit-atom fut timeout)
+    (future (func))))
+
+(defn execute-query
+  ([query]
+   (execute-query query nil))
+  ([query query-handler-fn]
+   (reset! interrupt-execute-query nil)
+   (let [query-fut (future (execute-query-nowait query query-handler-fn))
+         wait-fut (wait-for-atom-or-future interrupt-execute-query query-fut 1000)]
+     (deref wait-fut))))
+
 (defn show-table-metadata
   ([]
    (show-table-metadata nil))
@@ -197,3 +208,14 @@
            meta (.getMetaData rs)]
        (display-result-set rs meta)
        (reset! last-frame-label (format "table: %s" table))))))
+
+(defn- interrupt [signal]
+  (log/infof "interrupting with signal: %s" signal)
+  (reset! interrupt-execute-query true))
+
+
+(->> (proxy [SignalHandler] []
+       (handle [s]
+         (log/debugf "signal: %s" s)
+         (interrupt s)))
+     (Signal/handle (Signal. "INT")))
