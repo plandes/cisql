@@ -12,21 +12,28 @@
 
 (declare directives)
 
-(defn- command-line-directive [name desc ns-sym func-sym]
-  {:name name
-   :arg-count "*"
-   :usage "<help|[options]>"
-   :desc desc
-   :fn (fn [_ args]
-         (log/debugf "%s: args: <%s>" name args)
-         (binding [parse/*rethrow-error* false
-                   parse/*include-program-in-errors* false]
-           (let [ctx (-> (list ns-sym func-sym)
-                         parse/single-action-context)]
-             (if (= "help" (first args))
-               (parse/print-action-help ctx)
-               (let [res (parse/process-arguments ctx args)]
-                 (if res (println "configured" (:connection-uri res))))))))})
+(defn- command-line-directive
+  ([name desc ns-sym func-sym]
+   (command-line-directive name desc ns-sym func-sym "<help|[options]>"))
+  ([name desc ns-sym func-sym usage]
+   {:name name
+    :arg-count "*"
+    :usage usage
+    :desc desc
+    :fn (fn [_ args]
+          (log/debugf "%s: args: <%s>" name args)
+          (binding [parse/*rethrow-error* false
+                    parse/*include-program-in-errors* false]
+            (let [ctx (-> (list ns-sym func-sym)
+                          parse/single-action-context)]
+              (if (= "help" (first args))
+                (do
+                  (->> (if usage (str " " usage) "")
+                       (format "usage: %s%s" name)
+                       println)
+                  (parse/print-action-help ctx))
+                (let [res (parse/process-arguments ctx args)]
+                  (if res (println "configured" (:connection-uri res))))))))}))
 
 (defn- export [query last-query csv-name]
   (log/debugf "last query: %s" last-query)
@@ -81,12 +88,20 @@
     :arg-count 0
     :fn (fn [& _]
           (print-help))}
-   (command-line-directive "connect" "connect to a database (try 'help')"
-                           'zensols.cisql.interactive 'interactive-directive)
+   (command-line-directive "conn" "connect to a database (try 'help')"
+                           'zensols.cisql.interactive 'interactive-directive
+                           "<help|driver [options]>")
    (command-line-directive "newdrv" "add a JDBC driver (try 'help')"
                            'zensols.cisql.spec 'driver-add-command)
+   {:name "removedrv"
+    :arg-count 1
+    :usage "<driver>"
+    :desc "remove a JDBC driver"
+    :fn (fn [_ [driver-name]]
+          (spec/remove-meta driver-name))}
    (command-line-directive "purgedrv" "purge custom JDBC driver configuration"
-                           'zensols.cisql.spec 'driver-user-registry-purge-command)
+                           'zensols.cisql.spec 'driver-user-registry-purge-command
+                           nil)
    {:name "listdrv"
     :arg-count 0
     :desc "list all registered JDBC drivers"

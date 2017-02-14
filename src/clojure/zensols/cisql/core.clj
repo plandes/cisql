@@ -4,8 +4,7 @@
   (:require [clojure.string :as s])
   (:require [zensols.actioncli.log4j2 :as lu]
             [zensols.actioncli.parse :as parse])
-  (:require [zensols.cisql.conf :as conf]
-            [zensols.cisql.spec :as spec])
+  (:require [zensols.cisql.conf :as conf])
   (:require [zensols.cisql.version :as ver])
   (:gen-class :main true))
 
@@ -14,18 +13,15 @@
     (println)
     (println (conf/format-intro))
     (println)
-    (println summary)))
+    (print summary)
+    (flush)))
 
 (defn- version-info []
   (println (format "%s (%s)" ver/version ver/gitref)))
 
 (defn- create-action-context []
-  (parse/multi-action-context
-   '((:interactive zensols.cisql.interactive interactive-command)
-     ;(:add zensols.cisql.spec driver-add-command)
-     ;(:purge zensols.cisql.spec driver-user-registry-purge-command)
-     (:describe zensols.cisql.spec driver-describe-command))
-   :action-print-order [:interactive :describe :add :purge]
+  (parse/single-action-context
+   '(zensols.cisql.interactive interactive-command)
    :version-option (parse/version-option version-info)
    :print-help-fn print-help))
 

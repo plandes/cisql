@@ -12,9 +12,10 @@ downloads the JDBC drivers."
             [clojure.data.csv :as csv])
   (:require [cemerick.pomegranate :refer (add-dependencies)])
   (:require [zensols.actioncli.dynamic :refer (defa-) :as dyn]
-            [zensols.actioncli.parse :refer (with-exception)]
+            [zensols.actioncli.parse :refer (with-exception) :as parse]
             [zensols.actioncli.log4j2 :as lu])
-  (:require [zensols.cisql.pref :as pref]))
+  (:require [zensols.cisql.pref :as pref]
+            [zensols.cisql.conf :as conf]))
 
 (defa- driver-meta-inst)
 (defa- driver-pref-meta-inst)
@@ -125,9 +126,10 @@ downloads the JDBC drivers."
   (->> (driver-meta) keys))
 
 (defn- opts-to-flat [{:keys [dependency] :as opts}]
-  (let [manditory-keys [:class :url :name]
+  (let [manditory-keys [:class :url :name :dependency]
         optional-keys [:port]
-        [group artifact version] (s/split dependency #"/")]
+        [group artifact version] (if dependency
+                                   (s/split dependency #"/"))]
     (->> manditory-keys
          (map (fn [okey]
                 (if-not (contains? opts okey)
@@ -142,18 +144,32 @@ downloads the JDBC drivers."
 
 (defn- put-flat [flat]
   (log/debugf "adding <%s>" (pr-str flat))
-  (->> (pref/driver-metas)
-       (merge (flat-to-map flat))
-       pref/set-driver-metas)
+  (-> (pref/driver-metas)
+      (merge (flat-to-map flat))
+      pref/set-driver-metas)
   (log/infof "added driver: %s" (:name flat)))
 
-(defn name-option [validate?]
-  (concat ["-n" "--name" "DB implementation name"
-           :required "<product>"]
+(defn name-option
+  "Create a usage option for the database name."
+  [validate?]
+  (concat ["-n" "--name" "JDBC driver name (ex: mysql)"
+           :required "<name>"]
           (if validate?
             [:validate [#(contains? (set (registered-names)) %)
                         (str "Must be one of: "
                              (s/join ", " (registered-names)))]])))
+
+(defn remove-meta [driver-name]
+  (let [metas (driver-meta)]
+    (if-not (contains? metas driver-name)
+      (-> (format "No such driver: %s" driver-name)
+          (ex-info {:driver-name driver-name})
+          throw))
+    (-> metas
+        (dissoc driver-name)
+        pref/set-driver-metas)
+    (reset)
+    (log/infof "removed driver: %s" driver-name)))
 
 (defn- driver-describe []
   (->> (driver-meta)
@@ -190,9 +206,10 @@ downloads the JDBC drivers."
    :options
    [(name-option false)
     ["-u" "--url" (str "the URL pattern defaults to "
-                       "jdbc:<name>://%1$s:%2$s@%3$s:%4$s/%5$s"
-                       " (substitued with user, password, port, host, database)")
-     :required "<string>"]
+                       "jdbc:<name>://3$s:%4$s/%5$s"
+                       " (substitued with user, password, host, port, database)")
+     :required "<string>"
+     :default "jdbc:<name>://3$s:%4$s/%5$s"]
     ["-p" "--port" "the default bound database port (ex: 3306)"
      :required "<number>"
      :parse-fn read-string
@@ -203,11 +220,12 @@ downloads the JDBC drivers."
      :required "<string>"]]
    :app (fn [{:keys [name] :as opts} & args]
           (log/infof "loading driver: %s" name)
-          (with-exception
-            (let [flat (opts-to-flat opts)]
-              (load-dependencies flat)
-              (put-flat flat)
-              (reset))))})
+          (binding [parse/*rethrow-error* (conf/config :prex)]
+            (with-exception
+              (let [flat (opts-to-flat opts)]
+                (load-dependencies flat)
+                (put-flat flat)
+                (reset)))))})
 
 (def driver-user-registry-purge-command
   "CLI command to install a JDBC driver."
@@ -215,8 +233,9 @@ downloads the JDBC drivers."
    :options []
    :app (fn [opts & args]
           (log/info "purging user local JDBC registry")
-          (with-exception
-            (lu/change-log-level "info")
-            (pref/clear)
-            (reset)
-            (log/info "user's local JDBC registry purged")))})
+          (binding [parse/*rethrow-error* (conf/config :prex)]
+            (with-exception
+              (lu/change-log-level "info")
+              (pref/clear)
+              (reset)
+              (log/info "user's local JDBC registry purged"))))})

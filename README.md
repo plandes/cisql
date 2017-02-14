@@ -11,10 +11,25 @@ PostgreSQL out of the box.  Additional JDBC drivers can easily be added in a
 Features include:
 
 * A GUI tabulation presentation, which is handy for very large result sets.
+* Use any JDBC driver to connect almost any database.
+* JDBC drivers are configured in the command event loop application and
+  downloaded and integrated without having to restart.
+* Persist result sets as a `.csv` file.
 * Emacs interaction via the standard `sql.el` library.
 * Primitive variable setting (controls GUI interface, logging, etc).
-* Persist result sets as a `.csv` file.
 * Distribution is a one Java Jar file with all dependencies.
+
+## Contents
+
+* [Obtaining the app](#obtaining)
+* [Usage](#usage)
+  * [Connecting to a database](#connecting-to-a-database)
+  * [Installing new JDBC Drivers](#installing-new-jdbc-drivers)
+  * [Querying the database](#querying-the-database)
+  * [Command Line Usage](#command-line-usage)
+* [Documentation](#documentation)
+* [Changelog](#changelog)
+* [License](#license)
 
 
 ## Obtaining
@@ -23,18 +38,92 @@ The latest release binaries are
 available [here](https://github.com/plandes/cisql/releases/latest).
 
 
-## Documentation
-
-Additional [documentation](https://plandes.github.io/cisql/codox/index.html).
-
-
 ## Usage
 
-```sql
-$ java -jar target/cisql.jar -n sqlite -d path/to/awards.sqlite --config 'linesep=;,gui=false'
+You can specify command line arguments to connect to a database or you can
+connect (and re-connect) while in the command event loop of the program.
+
+The command line usage is given with the with `--help` option
+(see [command line usage](#command-line-usage)).  You
+can [connect](#connecting-to-a-database) in the application and not provide any
+connection arguments to start the application as well.
+
+An example of how to connect to an SQLlite database from the command line follows:
+```bash
+$ java -jar target/cisql.jar -n sqlite -d path/to/awards.sqlite
 Clojure Interactive SQL (cisql) v0.0.10
 (C) Paul Landes 2015 - 2017
-type 'help' to see a list of commands
+ 1 >
+```
+
+
+### Connecting to a Database
+
+The connection usage is the same in the event loop and on the command line:
+
+```sql
+ 1 > conn help
+usage: conn <help|driver [options]>
+Connect to a database
+  -u, --user <string>                 login name
+  -p, --password <string>             login password
+  -h, --host <string>      localhost  database host name
+  -d, --database <string>             database name
+      --port <number>                 database port
+```
+
+To connect to an *SQLite* database, use the following:
+```sql
+ 1 > conn sqlite --database awards.sqlite
+spec: loading dependencies for [[org.xerial/sqlite-jdbc "3.8.11.2"]]
+configured jdbc:sqlite:awards.sqlite
+```
+
+Connect to a *mySql* database:
+```sql
+ 1 > conn postgres -u puser -p pass -d puser -h 192.168.99.100
+spec: loading dependencies for [[postgresql/postgresql "9.1-901-1.jdbc4"]]
+configured jdbc:postgresql://puser:pass@localhost:5432/puser
+```
+
+
+### Installing new JDBC Drivers
+
+The tool itself comes with no JDBC drivers.  However it does have JDBC
+*configuration* settings for popular databases and
+are
+[configured in a resource file](https://github.com/plandes/cisql/blob/master/resources/driver.csv) in
+the program.  The system uses the [maven repository](https://mvnrepository.com)
+system and will automatically download and use the new driver without having to
+exit and restart the program.
+
+To configure and install a new JDBC driver (in this example to read comma
+delimited CSV files):
+```sql
+ 1 > newdrv -n csv -c org.relique.jdbc.csv.CsvDriver -d net.sourceforge.csvjdbc/csvjdbc/1.0.28 -u jdbc:relique:csv:%5$s
+spec: loading driver: csv
+spec: loading dependencies for [[net.sourceforge.csvjdbc/csvjdbc "1.0.28"]]
+spec: added driver: csv
+
+ 1 > conn -n csv -d /Users/paul/stats-dir
+spec: loading dependencies for [[net.sourceforge.csvjdbc/csvjdbc "1.0.28"]]
+configured jdbc:relique:csv:/Users/paul/stats-dir
+
+ 1 > select count(*) from stat-file;
+db-access: executing: select count(*) from stat-file
+
+| COUNT(*) |
+|----------|
+|       41 |
+```
+
+
+### Querying the database
+
+These examples show how to list tables in the database, a particular table and
+a select from that table.
+
+```sql
  1 > shtab
 
 | TABLE_CAT | TABLE_SCHEM |      TABLE_NAME | TABLE_TYPE | REMARKS | TYPE_CAT | TYPE_SCHEM | TYPE_NAME | SELF_REFERENCING_COL_NAME | REF_GENERATION |
@@ -81,66 +170,30 @@ The last command creates a new `.csv` spreadsheet file shown below:
 ![Spreadsheet .csv](https://plandes.github.io/cisql/img/spreadsheet-export.png)
 
 
-### Connecting to a Database
+### Command Line Usage
 
-You can specify command line arguments to connect to a database or you can
-connect (and re-connect) while in the command event loop of the program.
-The connection usage is the same in the event loop and on the command line:
-
+The command line usage is given below for convenience.
 ```sql
-1 > connect help
+usage: cisql [options]
+
+Clojure Interactive SQL (cisql) v0.0.12
+(C) Paul Landes 2015 - 2017
+
 Start an interactive session
-  -n, --name <product>                DB implementation name
-  -u, --user <string>                 login name
-  -p, --password <string>             login password
-  -h, --host <string>      localhost  database host name
-  -d, --database <string>             database name
-      --port <number>                 database port
+  -l, --level <log level>       INFO       Log level to set in the Log4J2 system.
+  -n, --name <product>                     DB implementation name
+  -u, --user <string>                      login name
+  -p, --password <string>                  login password
+  -h, --host <string>           localhost  database host name
+  -d, --database <string>                  database name
+      --port <number>                      database port
+  -c, --config <k1=v1>[,k2=v2]             set session configuration
+      --repl <number>                      the port bind for the repl server
 ```
 
-To connect to an *SQLite* database, use the following:
-```sql
- 1 > connect --name sqlite --database awards.sqlite
-spec: loading dependencies for [[org.xerial/sqlite-jdbc "3.8.11.2"]]
-configured jdbc:sqlite:awards.sqlite
-```
+## Documentation
 
-Connect to a *mySql* database:
-```sql
- 1 > connect -n postgres -u puser -p pass -d puser -h 192.168.99.100
-spec: loading dependencies for [[postgresql/postgresql "9.1-901-1.jdbc4"]]
-configured jdbc:postgresql://puser:pass@localhost:5432/puser
-```
-
-### Installing new JDBC Drivers
-
-The tool itself comes with no JDBC drivers.  However it does have JDBC
-*configuration* settings for popular databases and
-are
-[configured in a resource file](https://github.com/plandes/cisql/blob/master/resources/driver.csv) in
-the program.  The system uses the [maven repository](https://mvnrepository.com)
-system and will automatically download and use the new driver without having to
-exit and restart the program.
-
-To configure and install a new JDBC driver (in this example to read comma
-delimited CSV files):
-```sql
- 1 > newdrv -n csv -c org.relique.jdbc.csv.CsvDriver -d net.sourceforge.csvjdbc/csvjdbc/1.0.28 -u jdbc:relique:csv:%5$s
-spec: loading driver: csv
-spec: loading dependencies for [[net.sourceforge.csvjdbc/csvjdbc "1.0.28"]]
-spec: added driver: csv
-
- 1 > connect -n csv -d /Users/paul/stats-dir
-spec: loading dependencies for [[net.sourceforge.csvjdbc/csvjdbc "1.0.28"]]
-configured jdbc:relique:csv:/Users/paul/stats-dir
-
- 1 > select count(*) from stat-file;
-db-access: executing: select count(*) from stat-file
-
-| COUNT(*) |
-|----------|
-|       41 |
-```
+API [documentation](https://plandes.github.io/cisql/codox/index.html).
 
 
 ## Changelog

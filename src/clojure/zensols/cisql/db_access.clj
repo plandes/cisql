@@ -2,6 +2,7 @@
   (:import [sun.misc Signal SignalHandler])
   (:import [java.io BufferedReader InputStreamReader StringReader]
            [java.sql SQLException])
+  (:import [clojure.lang Agent])
   (:require [clojure.tools.logging :as log]
             [clojure.string :as str]
             [clojure.java.jdbc :as jdbc]
@@ -19,6 +20,10 @@
 (def ^:private last-frame-label (atom nil))
 
 (def ^:private interrupt-execute-query (atom nil))
+
+(def ^:private query-thread (atom nil))
+
+(def ^:private query-no (atom 0))
 
 (defn- resolve-connection [db]
   (let [conn (jdbc/db-connection db)
@@ -138,13 +143,24 @@
         (catch SQLException e
           (log/error (format-sql-exception e)))))))
 
+(defn- check-interrupt [curr-query-no]
+  (let [ieq @interrupt-execute-query]
+    (when (or ieq (not (= curr-query-no @query-no)))
+      (-> (ex-info (format "Interrupt query: %s" ieq)
+                   {:curr-query-no curr-query-no
+                    :interrupt-execute-query @interrupt-execute-query})
+          throw))))
+
 (defn- execute-query-nowait
   ([query]
    (execute-query-nowait query nil))
   ([query query-handler-fn]
    (jdbc/with-db-connection [db @dbspec]
      (let [conn (resolve-connection db)
-           stmt (.createStatement conn)]
+           stmt (.createStatement conn)
+           curr-query-no @query-no]
+       (reset! query-thread (Thread/currentThread))
+       (check-interrupt curr-query-no)
        (letfn [(pr-row-count [start rows]
                  (let [end (System/currentTimeMillis)
                        wait-time (double (/ (- end start) 1000))]
@@ -158,9 +174,11 @@
          (try
            (log/infof "executing: %s" query)
            (let [start (System/currentTimeMillis)]
+             (check-interrupt curr-query-no)
              (if (.execute stmt query)
                (let [rs (.getResultSet stmt)
                      meta (.getMetaData rs)]
+                 (check-interrupt curr-query-no)
                  (if query-handler-fn
                    (pr-row-count start (query-handler-fn rs))
                    (let [row-count (display-result-set rs meta)]
@@ -172,9 +190,10 @@
              (log/error (format-sql-exception e))
              (.cancel stmt))
            (finally
+             (reset! query-thread nil)
              (.close stmt))))))))
 
-(defn- wait-for-atom-or-future [quit-atom fut timeout]
+(defn- wait-atom-or-future [quit-atom fut timeout]
   (log/debugf "future done? %s" (future-done? fut))
   (letfn [(func []
             (let [sym (gensym)]
@@ -192,7 +211,7 @@
   ([query query-handler-fn]
    (reset! interrupt-execute-query nil)
    (let [query-fut (future (execute-query-nowait query query-handler-fn))
-         wait-fut (wait-for-atom-or-future interrupt-execute-query query-fut 1000)]
+         wait-fut (wait-atom-or-future interrupt-execute-query query-fut 1000)]
      (deref wait-fut))))
 
 (defn show-table-metadata
@@ -210,8 +229,20 @@
        (reset! last-frame-label (format "table: %s" table))))))
 
 (defn- interrupt [signal]
-  (log/infof "interrupting with signal: %s" signal)
-  (reset! interrupt-execute-query true))
+  (log/debugf "interrupting with signal: %s" signal)
+  (let [ieq @interrupt-execute-query]
+    (println)
+    (println "Interrupt")
+    (if (= ieq 'kill)
+      (let [thread @query-thread]
+        (print "Interrupt--kill")
+        (if thread (.stop thread)))
+      (swap! interrupt-execute-query
+             (fn [state]
+               (let [newstate (cond (nil? state) true
+                                    true 'kill)]
+                 (log/debugf "state: %s -> %s" state newstate)
+                 newstate))))))
 
 
 (->> (proxy [SignalHandler] []

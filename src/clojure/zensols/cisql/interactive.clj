@@ -5,7 +5,7 @@ downloads the JDBC drivers."
   (:require [clojure.tools.logging :as log]
             [clojure.java.io :as io]
             [clojure.string :as s])
-  (:require [zensols.actioncli.parse :refer (with-exception)]
+  (:require [zensols.actioncli.parse :refer (with-exception) :as parse]
             [zensols.actioncli.repl :as repl]
             [zensols.actioncli.log4j2 :as lu])
   (:require [zensols.cisql.process-query :as query]
@@ -28,10 +28,9 @@ downloads the JDBC drivers."
 
 (def interactive-directive
   "CLI command to start an interactive session."
-  {:description "Start an interactive session"
+  {:description "Connect to a database"
    :options
-   [(spec/name-option false)
-    ["-u" "--user <string>" "login name"
+   [["-u" "--user <string>" "login name"
      :required "<string>"]
     ["-p" "--password <string>" "login password"
      :required "<string>"]
@@ -41,27 +40,28 @@ downloads the JDBC drivers."
     [nil "--port <number>" "database port"
      :parse-fn #(Integer/parseInt %)
      :validate [#(< 0 % 0x10000) "Must be a number between 0 and 65536"]]]
-   :app (fn [{:keys [repl config] :as opts} & args]
-          (with-exception
-            (if-not name
-              (-> "missing name (-n) option"
-                  (ex-info {:option "-n"})
-                  throw))
-            (let [dbspec (create-db-spec opts)]
-              (log/debugf "setting db spec: %s" (pr-str dbspec))
-              (if dbspec (db/set-db-spec dbspec)))))})
+   :app (fn [{:keys [repl config] :as opts} & [name]]
+          (log/debugf "connecting to %s" name)
+          (binding [parse/*rethrow-error* (conf/config :prex)]
+            (with-exception
+              (if-not name
+                (-> "no driver name given" (ex-info {}) throw))
+              (let [dbspec (create-db-spec (assoc opts :name name))]
+                (log/debugf "setting db spec: %s" (pr-str dbspec))
+                (if dbspec (db/set-db-spec dbspec))))))})
 
 (def interactive-command
   "CLI command to start an interactive session."
   {:description (:description interactive-directive)
    :options
-   (->> (concat [(lu/log-level-set-option)]
+   (->> (concat [(spec/name-option false)
+                 (lu/log-level-set-option)]
                 (:options interactive-directive)
                 [["-c" "--config <key/values>" "set session configuration"
                   :required "<k1=v1>[,k2=v2]"
                   :parse-fn (fn [op]
                               (map #(s/split % #"=") (s/split op #"\s*,\s*")))]
-                 (repl/repl-port-set-option nil "--repl" nil)])
+                 (repl/repl-port-set-option "-r" "--repl" nil)])
         vec)
    :app (fn [{:keys [repl config name] :as opts} & args]
           (with-exception
