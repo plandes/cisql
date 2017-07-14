@@ -37,6 +37,9 @@
                  ;; mnemonic DSL
                  [instaparse "1.4.5"]
 
+                 ;; repl
+                 [cider/cider-nrepl "0.14.0"]
+
                  ;; logging: log4j2
                  [org.apache.logging.log4j/log4j-api "2.7"]
                  [org.apache.logging.log4j/log4j-core "2.7"]
@@ -44,7 +47,7 @@
                  [org.apache.logging.log4j/log4j-jcl "2.7"]
 
                  ;; command line
-                 [com.zensols.tools/actioncli "0.0.17"]]
+                 [com.zensols.tools/actioncli "snapshot"]]
   :pom-plugins [[org.codehaus.mojo/appassembler-maven-plugin "1.6"
                  {:configuration ([:programs
                                    [:program
@@ -52,9 +55,5 @@
                                      [:id "cisql"])]]
                                   [:environmentSetupFileName "setupenv"])}]]
   :profiles {:uberjar {:aot [zensols.cisql.core]}
-             :appassem {:aot :all}
-             :dev
-             {:jvm-opts
-              ["-Dlog4j.configurationFile=test-resources/log4j2.xml" "-Xms4g" "-Xmx8g" "-XX:+UseConcMarkSweepGC"]
-              :dependencies [[com.zensols/clj-append "1.0.5"]]}}
+             :appassem {:aot :all}}
   :main zensols.cisql.core)

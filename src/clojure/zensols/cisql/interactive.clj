@@ -8,7 +8,8 @@ downloads the JDBC drivers."
   (:require [zensols.actioncli.parse :refer (with-exception) :as parse]
             [zensols.actioncli.repl :as repl]
             [zensols.actioncli.log4j2 :as lu])
-  (:require [zensols.cisql.process-query :as query]
+  (:require [zensols.cisql.cider-repl :as cr]
+            [zensols.cisql.process-query :as query]
             [zensols.cisql.spec :as spec]
             [zensols.cisql.conf :as conf]
             [zensols.cisql.db-access :as db]))
@@ -40,7 +41,7 @@ downloads the JDBC drivers."
     [nil "--port <number>" "database port"
      :parse-fn #(Integer/parseInt %)
      :validate [#(< 0 % 0x10000) "Must be a number between 0 and 65536"]]]
-   :app (fn [{:keys [repl config] :as opts} & [name]]
+   :app (fn [opts & [name]]
           (log/debugf "connecting to %s" name)
           (binding [parse/*rethrow-error* (conf/config :prex)]
             (with-exception
@@ -61,14 +62,18 @@ downloads the JDBC drivers."
                   :required "<k1=v1>[,k2=v2]"
                   :parse-fn (fn [op]
                               (map #(s/split % #"=") (s/split op #"\s*,\s*")))]
-                 (repl/repl-port-set-option "-r" "--repl" nil)])
+                 (repl/repl-port-set-option "-r" "--repl" nil)
+                 (cr/repl-port-set-option nil "--cider" 12345)])
         vec)
-   :app (fn [{:keys [repl config name] :as opts} & args]
+   :app (fn [{:keys [repl cider config name] :as opts} & args]
           (with-exception
             (let [dbspec (if name (create-db-spec opts))]
-              (when repl
-                (log/infof "starting repl on port %d" repl)
-                (future (repl/run-server repl)))
+              (cond repl
+                    (do (log/infof "starting repl on port %d" repl)
+                        (future (repl/run-server repl)))
+                    cider
+                    (do (log/infof "starting cider repl on port %d" cider)
+                        (future (cr/run-server cider))))
               (and config (configure config))
               (conf/print-help)
               (if dbspec

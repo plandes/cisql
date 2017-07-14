@@ -27,11 +27,18 @@
             (let [ctx (-> (list ns-sym func-sym)
                           parse/single-action-context)]
               (if (= "help" (first args))
-                (do
+                (binding [parse/*parse-context* 
+                          {:action-context ctx
+                           :actions (parse/create-actions ctx)
+                           ;:actions {:NONE :HERE}
+                           ;; :action action
+                           ;; :options options
+                           ;; :arguments arguments
+                           :single-action-mode? true}]
                   (->> (if usage (str " " usage) "")
                        (format "usage: %s%s" name)
                        println)
-                  (parse/print-action-help ctx))
+                  (println (parse/help-message)))
                 (let [res (parse/process-arguments ctx args)]
                   (if res (println "configured" (:connection-uri res))))))))}))
 
