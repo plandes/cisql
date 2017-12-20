@@ -22,8 +22,7 @@
     :desc desc
     :fn (fn [_ args]
           (log/debugf "%s: args: <%s>" name args)
-          (binding [parse/*rethrow-error* false
-                    parse/*include-program-in-errors* false]
+          (binding [parse/*include-program-in-errors* false]
             (let [ctx (-> (list ns-sym func-sym)
                           parse/single-action-context)]
               (if (= "help" (first args))
@@ -38,7 +37,7 @@
                   (->> (if usage (str " " usage) "")
                        (format "usage: %s%s" name)
                        println)
-                  (println (parse/help-message)))
+                  (println (parse/help-message :usage false)))
                 (let [res (parse/process-arguments ctx args)]
                   (if res (println "configured" (:connection-uri res))))))))}))
 

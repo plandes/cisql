@@ -12,3 +12,7 @@ include $(ZBHOME)/src/mk/release.mk
 .PHONY:	test
 test:
 	$(LEIN) test
+
+.PHONY:	repl
+repl:
+	$(LEIN) with-profile +ciderrepl run --cider 32345 --config 'gui=false'

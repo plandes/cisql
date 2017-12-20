@@ -117,6 +117,14 @@ db-access: executing: select count(*) from stat-file
 |       41 |
 ```
 
+#### Apache Drill
+
+The following installs the direct drill bit JDBC driver:
+
+```sql
+1> newdrv -n drilldir -u jdbc:drill:drillbit=%3$s:%4$s -p 31010 -c org.apache.drill.jdbc.Driver -d org.apache.drill.exec/drill-jdbc/1.10.0
+```
+
 
 ### Querying the database
 

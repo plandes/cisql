@@ -206,10 +206,10 @@ downloads the JDBC drivers."
    :options
    [(name-option false)
     ["-u" "--url" (str "the URL pattern defaults to "
-                       "jdbc:<name>://3$s:%4$s/%5$s"
+                       "jdbc:<name>://%3$s:%4$s/%5$s"
                        " (substitued with user, password, host, port, database)")
      :required "<string>"
-     :default "jdbc:<name>://3$s:%4$s/%5$s"]
+     :default "jdbc:<name>://%3$s:%4$s/%5$s"]
     ["-p" "--port" "the default bound database port (ex: 3306)"
      :required "<number>"
      :parse-fn read-string
