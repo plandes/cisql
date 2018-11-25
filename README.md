@@ -1,7 +1,6 @@
-# SQL Command Line Interface [![Travis CI Build Status][travis-badge]][travis-link]
+# SQL Command Line Interface
 
-  [travis-link]: https://travis-ci.org/plandes/cisql
-  [travis-badge]: https://travis-ci.org/plandes/cisql.svg?branch=master
+[![Travis CI Build Status][travis-badge]][travis-link]
 
 This program provides a command line interface to interacting with relational
 database managements systems (RDMBs) and currently includes SQLite, MySQL and
@@ -15,21 +14,26 @@ Features include:
 * JDBC drivers are configured in the command event loop application and
   downloaded and integrated without having to restart.
 * Persist result sets as a `.csv` file.
-* Emacs interaction via the standard `sql.el` library.
+* Emacs interaction with the [cisql] library.
 * Primitive variable setting (controls GUI interface, logging, etc).
 * Distribution is a one Java Jar file with all dependencies.
 
-## Contents
 
-* [Obtaining the app](#obtaining)
-* [Usage](#usage)
-  * [Connecting to a database](#connecting-to-a-database)
-  * [Installing new JDBC Drivers](#installing-new-jdbc-drivers)
-  * [Querying the database](#querying-the-database)
-  * [Command Line Usage](#command-line-usage)
-* [Documentation](#documentation)
-* [Changelog](#changelog)
-* [License](#license)
+<!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
+## Table of Contents
+
+- [Obtaining](#obtaining)
+- [Usage](#usage)
+    - [Connecting to a Database](#connecting-to-a-database)
+    - [Installing new JDBC Drivers](#installing-new-jdbc-drivers)
+        - [Apache Drill](#apache-drill)
+    - [Querying the database](#querying-the-database)
+    - [Command Line Usage](#command-line-usage)
+- [Documentation](#documentation)
+- [Changelog](#changelog)
+- [License](#license)
+
+<!-- markdown-toc end -->
 
 
 ## Obtaining
@@ -211,18 +215,28 @@ An extensive changelog is available [here](CHANGELOG.md).
 
 ## License
 
-Copyright © 2017 Paul Landes
+Copyright © 2017-2018 Paul Landes
 
-Apache License version 2.0
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is furnished to do
+so, subject to the following conditions:
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-[http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0)
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+
+<!-- links -->
+[cisql]: https://github.com/plandes/cisql
+[travis-link]: https://travis-ci.org/plandes/cisql
+[travis-badge]: https://travis-ci.org/plandes/cisql.svg?branch=master

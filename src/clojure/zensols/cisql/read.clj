@@ -2,9 +2,9 @@
       :author "Paul Landes"}
     zensols.cisql.read
   (:require [clojure.tools.logging :as log]
-            [clojure.string :as s])
-  (:require [instaparse.core :as insta])
-  (:require [zensols.cisql.conf :as conf]))
+            [clojure.string :as s]
+            [instaparse.core :as insta]
+            [zensols.cisql.conf :as conf]))
 
 (def ^:private cmd-bnf-fn
   "Generated DSL parser."

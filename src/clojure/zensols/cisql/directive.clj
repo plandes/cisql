@@ -3,8 +3,8 @@
     zensols.cisql.directive
   (:require [clojure.tools.logging :as log])
   (:require [zensols.actioncli.log4j2 :as lu]
-            [zensols.actioncli.parse :as parse])
-  (:require [zensols.cisql.conf :as conf]
+            [zensols.actioncli.parse :as parse]
+            [zensols.cisql.conf :as conf]
             [zensols.cisql.read :as r]
             [zensols.cisql.spec :as spec]
             [zensols.cisql.db-access :as db]

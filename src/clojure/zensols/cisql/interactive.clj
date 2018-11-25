@@ -4,11 +4,11 @@ downloads the JDBC drivers."
     zensols.cisql.interactive
   (:require [clojure.tools.logging :as log]
             [clojure.java.io :as io]
-            [clojure.string :as s])
-  (:require [zensols.actioncli.parse :refer (with-exception) :as parse]
+            [clojure.string :as s]
+            [zensols.actioncli.parse :refer (with-exception) :as parse]
             [zensols.actioncli.repl :as repl]
-            [zensols.actioncli.log4j2 :as lu])
-  (:require [zensols.cisql.cider-repl :as cr]
+            [zensols.actioncli.log4j2 :as lu]
+            [zensols.cisql.cider-repl :as cr]
             [zensols.cisql.process-query :as query]
             [zensols.cisql.spec :as spec]
             [zensols.cisql.conf :as conf]

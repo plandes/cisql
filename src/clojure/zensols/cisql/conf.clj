@@ -2,8 +2,8 @@
       :author "Paul Landes"}
     zensols.cisql.conf
   (:require [clojure.string :as str]
-            [clojure.tools.logging :as log])
-  (:require [zensols.cisql.version :as ver]))
+            [clojure.tools.logging :as log]
+            [zensols.cisql.version :as ver]))
 
 (def ^:private config-data
   (atom {:gui false
@@ -61,7 +61,7 @@
 
 (defn format-intro []
   (format "Clojure Interactive SQL (cisql) %s
-(C) Paul Landes 2015 - 2017"
+(C) Paul Landes 2015 - 2018"
           (format-version)))
 
 (defn print-help []

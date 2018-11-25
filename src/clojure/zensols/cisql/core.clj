@@ -3,9 +3,9 @@
     zensols.cisql.core
   (:require [clojure.string :as s])
   (:require [zensols.actioncli.log4j2 :as lu]
-            [zensols.actioncli.parse :as parse])
-  (:require [zensols.cisql.conf :as conf])
-  (:require [zensols.cisql.version :as ver])
+            [zensols.actioncli.parse :as parse]
+            [zensols.cisql.conf :as conf]
+            [zensols.cisql.version :as ver])
   (:gen-class :main true))
 
 (defn- print-help [summary]

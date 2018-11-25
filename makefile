@@ -1,13 +1,15 @@
 ## makefile automates the build and deployment for lein projects
 
-# location of the http://github.com/plandes/clj-zenbuild cloned directory
-ZBHOME ?=	../clj-zenbuild
+# type of project, currently one of: clojure, python
+PROJ_TYPE=		clojure
+# make modules to add functionality to a build
+PROJ_MODULES=		appassem release
 
-all:		info
+# make build dependencies
+_ :=	$(shell [ ! -d .git ] && git init ; [ ! -d zenbuild ] && \
+	  git submodule add https://github.com/plandes/zenbuild && make gitinit )
 
-include $(ZBHOME)/src/mk/compile.mk
-include $(ZBHOME)/src/mk/dist.mk
-include $(ZBHOME)/src/mk/release.mk
+include ./zenbuild/main.mk
 
 .PHONY:	test
 test:

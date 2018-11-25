@@ -2,12 +2,11 @@
       :author "Paul Landes"}
   zensols.cisql.pref
   (:import (com.zensols.gui.pref PrefSupport))
-  (:require [clojure.tools.logging :as log])
-  (:require [zensols.actioncli.dynamic :refer (defa-)]))
-
-(defa- pref-inst)
+  (:require [clojure.tools.logging :as log]))
 
 (definterface PrefNode (_ []))
+
+(def ^:private pref-inst (atom nil))
 
 (def ^:private driver-config-prop "driver")
 

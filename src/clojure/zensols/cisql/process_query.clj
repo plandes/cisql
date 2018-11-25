@@ -1,12 +1,12 @@
 (ns ^{:doc "Process query at the command line from user input."
       :author "Paul Landes"}
     zensols.cisql.process-query
-  (:require [clojure.tools.logging :as log]
-            [clojure.string :as str])
   (:import (java.io BufferedReader InputStreamReader StringReader))
-  (:require [zensols.actioncli.log4j2 :as lu]
-            [zensols.actioncli.parse :as parse :refer (with-exception)])
-  (:require [zensols.cisql.conf :as conf]
+  (:require [clojure.tools.logging :as log]
+            [clojure.string :as str]
+            [zensols.actioncli.log4j2 :as lu]
+            [zensols.actioncli.parse :as parse :refer (with-exception)]
+            [zensols.cisql.conf :as conf]
             [zensols.cisql.db-access :as db]
             [zensols.cisql.table-export :as te]
             [zensols.cisql.read :as r]

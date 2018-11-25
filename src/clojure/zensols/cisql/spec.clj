@@ -9,16 +9,16 @@ downloads the JDBC drivers."
             [clojure.string :as s]
             [clojure.set :refer (rename-keys)]
             [clojure.java.jdbc :as jdbc]
-            [clojure.data.csv :as csv])
-  (:require [cemerick.pomegranate :refer (add-dependencies)])
-  (:require [zensols.actioncli.dynamic :refer (defa-) :as dyn]
+            [clojure.data.csv :as csv]
+            [cemerick.pomegranate :refer (add-dependencies)]
+            [zensols.actioncli.dynamic :as dyn]
             [zensols.actioncli.parse :refer (with-exception) :as parse]
-            [zensols.actioncli.log4j2 :as lu])
-  (:require [zensols.cisql.pref :as pref]
+            [zensols.actioncli.log4j2 :as lu]
+            [zensols.cisql.pref :as pref]
             [zensols.cisql.conf :as conf]))
 
-(defa- driver-meta-inst)
-(defa- driver-pref-meta-inst)
+(defonce ^:private driver-meta-inst (atom nil))
+(defonce ^:private driver-pref-meta-inst (atom nil))
 
 (defn reset []
   (reset! driver-meta-inst nil)

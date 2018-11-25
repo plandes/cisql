@@ -1,15 +1,15 @@
 (ns zensols.cisql.db-access
-  (:import [sun.misc Signal SignalHandler])
-  (:import [java.io BufferedReader InputStreamReader StringReader]
-           [java.sql SQLException])
-  (:import [clojure.lang Agent])
+  (:import [sun.misc Signal SignalHandler]
+           [java.io BufferedReader InputStreamReader StringReader]
+           [java.sql SQLException]
+           (com.zensols.gui.tabres ResultSetFrame)
+           [clojure.lang Agent])
   (:require [clojure.tools.logging :as log]
             [clojure.string :as str]
             [clojure.java.jdbc :as jdbc]
-            [clojure.pprint :refer (pprint print-table)])
-  (:import (com.zensols.gui.tabres ResultSetFrame))
-  (:require [zensols.tabres.display-results :as dis])
-  (:require [zensols.cisql.conf :as conf]))
+            [clojure.pprint :refer (pprint print-table)]
+            [zensols.tabres.display-results :as dis]
+            [zensols.cisql.conf :as conf]))
 
 (def ^:private dbspec (atom nil))
 
