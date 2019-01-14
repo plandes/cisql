@@ -121,6 +121,14 @@ db-access: executing: select count(*) from stat-file
 |       41 |
 ```
 
+
+#### SQLite
+
+```sql
+1> newdrv -n sqlite -c org.sqlite.JDBC -u jdbc:sqlite:%5$s -d org.xerial/sqlite-jdbc/3.25.2
+```
+
+
 #### Apache Drill
 
 The following installs the direct drill bit JDBC driver:
