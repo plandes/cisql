@@ -26,6 +26,7 @@ Features include:
 - [Usage](#usage)
     - [Connecting to a Database](#connecting-to-a-database)
     - [Installing new JDBC Drivers](#installing-new-jdbc-drivers)
+        - [SQLite](#sqlite)
         - [Apache Drill](#apache-drill)
     - [Querying the database](#querying-the-database)
     - [Command Line Usage](#command-line-usage)
