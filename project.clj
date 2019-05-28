@@ -40,7 +40,7 @@
                  [instaparse "1.4.5"]
 
                  ;; repl
-                 [cider/cider-nrepl "0.14.0"]
+                 [cider/cider-nrepl "0.21.1"]
 
                  ;; logging: log4j2
                  [org.apache.logging.log4j/log4j-core "2.7"]
