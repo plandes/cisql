@@ -5,9 +5,9 @@ PROJ_TYPE=		clojure
 # make modules to add functionality to a build
 PROJ_MODULES=		appassem release
 
-# make build dependencies
-_ :=	$(shell [ ! -d .git ] && git init ; [ ! -d zenbuild ] && \
-	  git submodule add https://github.com/plandes/zenbuild && make gitinit )
+# use clojure 10
+UBER_JAR_PROFS +=	with-profile +1.10
+APP_INST_DIR =		$(HOME)/opt/app/cisql
 
 include ./zenbuild/main.mk
 

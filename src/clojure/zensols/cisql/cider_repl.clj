@@ -1,5 +1,5 @@
 (ns zensols.cisql.cider-repl
-  (:require [clojure.tools.nrepl.server :as nrepl-server]
+  (:require [nrepl.server :as nrepl-server]
             [cider.nrepl :refer (cider-nrepl-handler)]))
 
 (defn run-server
@@ -21,3 +21,5 @@
    [(repl-port-set-option "-c" "--cider" 12345)]
    :app (fn [{:keys [port]} & args]
           (run-server port))})
+;(nrepl-server/start-server :port 32345 :handler cider-nrepl-handler)
+

@@ -30,11 +30,12 @@
                  ;; driver dep download
                  [com.cemerick/pomegranate "0.3.1"
                   :exclusions [ch.qos.logback/logback-classic
-                               org.slf4j/slf4j-log4j12]]
+                               org.slf4j/slf4j-log4j12
+                               org.codehaus.plexus/plexus-utils]]
 
                  ;; gui
                  [com.zensols.gui/tabres "0.0.6"]
-                 [com.zensols.gui/pref "0.0.2"]
+                 [com.zensols.gui/pref "0.0.2" :exclusions [commons-logging]]
 
                  ;; mnemonic DSL
                  [instaparse "1.4.5"]
@@ -49,7 +50,7 @@
                  [org.apache.logging.log4j/log4j-jcl "2.7"]
 
                  ;; command line
-                 [com.zensols.tools/actioncli "0.0.27"]]
+                 [com.zensols.tools/actioncli "0.0.29"]]
   :pom-plugins [[org.codehaus.mojo/appassembler-maven-plugin "1.6"
                  {:configuration ([:programs
                                    [:program
@@ -57,6 +58,7 @@
                                      [:id "cisql"])]]
                                   [:environmentSetupFileName "setupenv"])}]]
   :profiles {:1.9 {:dependencies [[org.clojure/clojure "1.9.0"]]}
+             :1.10 {:dependencies [[org.clojure/clojure "1.10.0"]]}
              :uberjar {:aot :all}
              :appassem {:aot :all}
              :snapshot {:git-version {:version-cmd "echo -snapshot"}}
