@@ -110,7 +110,7 @@ spec: loading driver: csv
 spec: loading dependencies for [[net.sourceforge.csvjdbc/csvjdbc "1.0.28"]]
 spec: added driver: csv
 
- 1 > conn -n csv -d /Users/paul/stats-dir
+ 1 > conn csv -d /Users/paul/stats-dir
 spec: loading dependencies for [[net.sourceforge.csvjdbc/csvjdbc "1.0.28"]]
 configured jdbc:relique:csv:/Users/paul/stats-dir
 

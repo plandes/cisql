@@ -7,7 +7,8 @@ PROJ_MODULES=		appassem release
 
 # use clojure 10
 UBER_JAR_PROFS +=	with-profile +1.10
-APP_INST_DIR =		$(HOME)/opt/app/cisql
+# cheat install
+APP_INST_DIR =		$(HOME)/opt/app/cisql/cisql.jar
 
 include ./zenbuild/main.mk
 

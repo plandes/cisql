@@ -30,8 +30,7 @@
                  ;; driver dep download
                  [com.cemerick/pomegranate "0.3.1"
                   :exclusions [ch.qos.logback/logback-classic
-                               org.slf4j/slf4j-log4j12
-                               org.codehaus.plexus/plexus-utils]]
+                               org.slf4j/slf4j-log4j12]]
 
                  ;; gui
                  [com.zensols.gui/tabres "0.0.6"]

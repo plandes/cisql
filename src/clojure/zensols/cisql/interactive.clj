@@ -16,7 +16,8 @@ downloads the JDBC drivers."
 
 (defn create-db-spec [{:keys [name] :as opts}]
   (log/debugf "creating db spec with opts: %s" opts)
-  (spec/db-spec (select-keys opts [:name :user :password :host :port :database])))
+  (spec/db-spec (select-keys opts [:name :user :password 
+                                   :host :port :database])))
 
 (defn- configure [conf]
   (doseq [[k v] conf]
