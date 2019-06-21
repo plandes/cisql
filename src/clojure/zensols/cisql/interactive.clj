@@ -47,7 +47,9 @@ downloads the JDBC drivers."
           (binding [parse/*rethrow-error* (conf/config :prex)]
             (with-exception
               (if-not name
-                (-> "no driver name given" (ex-info {}) throw))
+                (-> "no driver name given"
+                    (ex-info {})
+                    throw))
               (let [dbspec (create-db-spec (assoc opts :name name))]
                 (log/debugf "setting db spec: %s" (pr-str dbspec))
                 (if dbspec (db/set-db-spec dbspec))))))})
@@ -62,19 +64,11 @@ downloads the JDBC drivers."
                 [["-c" "--config <key/values>" "set session configuration"
                   :required "<k1=v1>[,k2=v2]"
                   :parse-fn (fn [op]
-                              (map #(s/split % #"=") (s/split op #"\s*,\s*")))]
-                 (repl/repl-port-set-option "-r" "--repl" nil)
-                 (cr/repl-port-set-option nil "--cider" 12345)])
+                              (map #(s/split % #"=") (s/split op #"\s*,\s*")))]])
         vec)
-   :app (fn [{:keys [repl cider config name] :as opts} & args]
+   :app (fn [{:keys [config name] :as opts} & args]
           (with-exception
             (let [dbspec (if name (create-db-spec opts))]
-              (cond repl
-                    (do (log/infof "starting repl on port %d" repl)
-                        (future (repl/run-server repl)))
-                    cider
-                    (do (log/infof "starting cider repl on port %d" cider)
-                        (future (cr/run-server cider))))
               (and config (configure config))
               (conf/print-help)
               (if dbspec
@@ -83,4 +77,3 @@ downloads the JDBC drivers."
               (if dbspec (db/set-db-spec dbspec))
               (log/debugf "setting db spec: %s" (pr-str dbspec))
               (query/start-event-loop))))})
-

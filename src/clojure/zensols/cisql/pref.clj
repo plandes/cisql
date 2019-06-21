@@ -8,27 +8,51 @@
 
 (def ^:private pref-inst (atom nil))
 
-(def ^:private driver-config-prop "driver")
+(def ^:private pref-ns *ns*)
+
+(def driver-config-prop "driver")
+(def environment-config-prop "env")
 
 (defn pref-support []
   (swap! pref-inst
          #(or % (PrefSupport. PrefNode))))
 
-(defn driver-metas []
-  (-> (pref-support)
-      .getPreferences
-      (.get driver-config-prop "{}")
+(defn- prefs []
+  (.getPreferences (pref-support)))
+
+(defn- set-var [name data]
+  (log/debugf "set %s: <%s>" name (pr-str data))
+  (doto (prefs)
+    (.put name (str "(quote " (pr-str data) ")"))
+    (.sync)))
+
+(defn- get-var [name & {:keys [default]
+                       :or {default {}}}]
+  (-> (prefs)
+      (.get name (pr-str default))
       read-string
       eval))
 
-(defn set-driver-metas [metas]
-  (log/debugf "set driver metas: <%s>" (pr-str metas))
-  (doto (-> (pref-support)
-            .getPreferences)
-    (.put driver-config-prop (str "(quote " (pr-str metas) ")"))
-    (.sync)))
+(defn driver-metas []
+  (get-var driver-config-prop))
 
-(defn clear []
-  (-> (pref-support)
-      .getPreferences
-      .clear))
+(defn set-driver-metas [metas]
+  (set-var driver-config-prop metas))
+
+(defn environment [default-value]
+  (get-var environment-config-prop :default default-value))
+
+(defn set-environment [env]
+  (set-var environment-config-prop env))
+
+(defn clear [& {:keys [var]
+                :or {var :all}}]
+  (if (= var :all)
+    (.clear (prefs))
+    (let [name (->> (str (name var) "-config-prop")
+                    (symbol (name (ns-name pref-ns)))
+                    eval)]
+      (if (nil? name)
+        (throw (ex-info (format "No defined variable: %s" var) {:name name})))
+      (doto (prefs)
+        (.remove name)))))

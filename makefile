@@ -4,9 +4,6 @@
 PROJ_TYPE=		clojure
 # make modules to add functionality to a build
 PROJ_MODULES=		appassem release
-
-# use clojure 10
-UBER_JAR_PROFS +=	with-profile +1.10
 # cheat install
 APP_INST_DIR =		$(HOME)/opt/app/cisql/cisql.jar
 

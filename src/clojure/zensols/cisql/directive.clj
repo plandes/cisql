@@ -8,9 +8,40 @@
             [zensols.cisql.read :as r]
             [zensols.cisql.spec :as spec]
             [zensols.cisql.db-access :as db]
-            [zensols.cisql.table-export :as te]))
+            [zensols.cisql.export :as ex]
+            [zensols.cisql.pref :as pref]
+            [zensols.cisql.cider-repl :as repl]))
 
 (declare directives)
+
+(defn- assert-no-query [{:keys [query directive]}]
+  (if query
+    (-> (format "unexpected query: %s" query)
+        (ex-info {:query query
+                  :directive directive})
+                throw)))
+
+(defn- exec-command-line-directive
+  "Execute a general command line directive from the general definition creator
+  `command-line-directive`."
+  [name desc ns-sym func-sym usage {:keys [directive] :as opts} args]
+  (log/debugf "%s: opts: %s, args: <%s>" name opts args)
+  (binding [parse/*include-program-in-errors* false]
+    (let [ctx (-> (list ns-sym func-sym)
+                  parse/single-action-context)]
+      (if (= "help" (first args))
+        (binding [parse/*parse-context* 
+                  {:action-context ctx
+                   :actions (parse/create-actions ctx)
+                   :single-action-mode? true}]
+          (->> (if usage (str " " usage) "")
+               (format "usage: %s%s" name)
+               println)
+          (println (parse/help-message :usage false)))
+        (let [res (parse/process-arguments ctx args)]
+          (assert-no-query opts)
+          (if res
+            (println "configured" (:connection-uri res))))))))
 
 (defn- command-line-directive
   ([name desc ns-sym func-sym]
@@ -20,41 +51,9 @@
     :arg-count "*"
     :usage usage
     :desc desc
-    :fn (fn [_ args]
-          (log/debugf "%s: args: <%s>" name args)
-          (binding [parse/*include-program-in-errors* false]
-            (let [ctx (-> (list ns-sym func-sym)
-                          parse/single-action-context)]
-              (if (= "help" (first args))
-                (binding [parse/*parse-context* 
-                          {:action-context ctx
-                           :actions (parse/create-actions ctx)
-                           ;:actions {:NONE :HERE}
-                           ;; :action action
-                           ;; :options options
-                           ;; :arguments arguments
-                           :single-action-mode? true}]
-                  (->> (if usage (str " " usage) "")
-                       (format "usage: %s%s" name)
-                       println)
-                  (println (parse/help-message :usage false)))
-                (let [res (parse/process-arguments ctx args)]
-                  (if res (println "configured" (:connection-uri res))))))))}))
-
-(defn- export [query last-query csv-name]
-  (log/debugf "last query: %s" last-query)
-  (let [to-export (or query last-query)]
-    (if-not to-export
-      (binding [*out* *err*]
-        (-> "no queued query (skip the query delimiter (%s) after SQL)"
-            (format (conf/config :linesep))
-            (ex-info {:query query
-                      :last-query last-query
-                      :csv-name csv-name})
-            throw)))
-    (if-not query
-      (println "no queued query so using the last executed"))
-    (te/export-table-csv to-export csv-name)))
+    :fn (fn [{:keys [query directive] :as opts} args]
+          (exec-command-line-directive name desc ns-sym
+                                       func-sym usage opts args))}))
 
 (defn- print-command-help []
   (let [decls (->> (directives)
@@ -89,6 +88,16 @@
    (zipmap (map :name (directives))
            (map #(dissoc % :name) dirs))))
 
+(defn- set-log-level [key value]
+  (when (= key :loglevel)
+    (if (nil? value)
+      (log/error "can't set level: no log level given")
+      (do
+        (lu/change-log-level value)
+        (log/info (format "set log level to %s" value))))))
+
+(conf/add-set-config-hook set-log-level)
+
 (defn- directives []
   [{:name "help"
     :arg-count 0
@@ -103,7 +112,8 @@
     :arg-count 1
     :usage "<driver>"
     :desc "remove a JDBC driver"
-    :fn (fn [_ [driver-name]]
+    :fn (fn [opts [driver-name]]
+          (assert-no-query opts)
           (spec/remove-meta driver-name))}
    (command-line-directive "purgedrv" "purge custom JDBC driver configuration"
                            'zensols.cisql.spec 'driver-user-registry-purge-command
@@ -111,73 +121,93 @@
    {:name "listdrv"
     :arg-count 0
     :desc "list all registered JDBC drivers"
-    :fn (fn [& _]
+    :fn (fn [opts args]
+          (assert-no-query opts)
           (spec/print-drivers))}
+   (command-line-directive "repl" "start a REPL"
+                           'zensols.cisql.cider-repl 'repl-command)
    {:name "sh"
     :arg-count ".."
     :usage "[variable]"
     :desc "show 'variable', or show them all if not given"
-    :fn (fn [{:keys [query]} args]
+    :fn (fn [opts args]
+          (assert-no-query opts)
           (let [vkey (and (seq? args) (first args))]
-            (log/debugf "query: <%s>, args: <%s>" query args)
             (if vkey
               (->> (conf/config (keyword vkey))
                    (format "%s: %s" vkey)
                    println)
               (conf/print-key-values))))}
    {:name "set"
-    :arg-count 2
-    :usage "<variable> <value>"
-    :desc "set a variable"
-    :fn (fn [_ [key-name newval]]
-          (let [key (keyword key-name)
-                oldval (conf/config key)]
+    :arg-count "*"
+    :usage "<variable> [value]"
+    :desc "set a variable, if 'value' is not given, then take it from the previous query input"
+    :fn (fn [{:keys [query] :as opts} args]
+          (if (= 0 (count args))
+            (throw (ex-info "missing variable to set (try 'help')"
+                            {:query query :opts opts})))
+          (let [key (keyword (first args))
+                oldval (conf/config key)
+                newval (if (> (count args) 1)
+                         (second args)
+                         query)]
             (conf/set-config key newval)
             ;; end of query terminator has changed so reinitialize grammer
-            (if (= :linesep key-name)
+            (if (= :linesep key)
               (init-grammer))
             (println (format "%s: %s -> %s" (name key) oldval newval))))}
+   {:name "resetenv"
+    :arg-count 0
+    :desc "Reset all environment settings"
+    :fn (fn [opts [driver-name]]
+          (assert-no-query opts)
+          (conf/reset))}
    {:name "tg"
     :arg-count 1
     :usage "<variable>"
     :desc "toggle a boolean variable"
-    :fn (fn [_ [key-name]]
+    :fn (fn [opts [key-name]]
+          (assert-no-query opts)
           (let [key (keyword key-name)
                 oldval (conf/config key)
                 nextval (not oldval)]
             (conf/set-config key nextval)
             (println (format "%s: %s -> %s"
                              key-name oldval nextval))))}
-   {:name "loglevel"
-    :arg-count 1
-    :usage "<level>"
-    :desc "set logging verbosity (<error|warn|info|debug|trace>)"
-    :fn (fn [_ [level]]
-          (lu/change-log-level level)
-          (println (format "set log level to %s" level)))}
    {:name "shtab"
     :arg-count ".."
     :usage "[table]"
     :desc "show table metdata or all if no table given"
-    :fn (fn [_ args]
+    :fn (fn [opts args]
+          (assert-no-query opts)
           (let [table (and (seq? args) (first args))]
             (db/show-table-metadata table)))}
+   {:name "vaporize"
+    :arg-count 0
+    :desc "reset all configuration including drivers (careful!)"
+    :fn (fn [opts args]
+          (assert-no-query opts)
+          (let [table (and (seq? args) (first args))]
+            (pref/clear)
+            (conf/reset)))}
    {:name "orph"
     :arg-count ".."
     :usage "[label]"
     :desc "orphan the current frame optionally giving it a label"
-    :fn (fn [_ args]
+    :fn (fn [opts args]
+          (assert-no-query opts)
           (let [label (and (seq? args) (first args))]
             (db/orphan-frame label)))}
    {:name "cat"
     :arg-count 1
     :usage "<catalog>"
     :desc "set the schema/catalog of the database"
-    :fn (fn [_ [cat-name]]
+    :fn (fn [opts [cat-name]]
+          (assert-no-query opts)
           (db/set-catalog cat-name))}
    {:name "export"
     :arg-count 1
     :usage "<csv file>"
-    :desc "export the queued query to a CSV file"
+    :desc "export the the query on the previous line (no delimiter ';')) to a CSV file"
     :fn (fn [{:keys [query last-query]} [csv-name]]
-          (export query last-query csv-name))}])
+          (ex/export-query-to-csv query last-query csv-name))}])

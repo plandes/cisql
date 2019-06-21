@@ -2,13 +2,13 @@
   (:import [sun.misc Signal SignalHandler]
            [java.io BufferedReader InputStreamReader StringReader]
            [java.sql SQLException]
-           (com.zensols.gui.tabres ResultSetFrame)
-           [clojure.lang Agent])
+           (com.zensols.gui.tabres ResultSetFrame))
   (:require [clojure.tools.logging :as log]
             [clojure.string :as str]
             [clojure.java.jdbc :as jdbc]
             [clojure.pprint :refer (pprint print-table)]
             [zensols.tabres.display-results :as dis]
+            [zensols.actioncli.parse :as parse]
             [zensols.cisql.conf :as conf]))
 
 (def ^:private dbspec (atom nil))
@@ -67,6 +67,13 @@
 (defn connected? []
   (not (nil? @dbspec)))
 
+(defn assert-connection []
+  (let [conn? (connected?)]
+    (log/debugf "connected: %s" conn?)
+    (if-not conn?
+      (throw (ex-info "no connection; try 'connect help'" {:connected? false})))
+    conn?))
+
 (defn set-db-spec [spec]
   (reset! dbspec spec))
 
@@ -100,7 +107,7 @@
 (defn- print-sql-exception [sqlex]
   (if sqlex (println (format-sql-exception sqlex))))
 
-(defn- slurp-result-set [rs meta]
+(defn- slurp-result-set-nolazy [rs meta]
   (letfn [(make-row [col]
             {(.getColumnLabel meta col) (.getString rs col)})]
     (let [cols (.getColumnCount meta)]
@@ -109,6 +116,15 @@
           (recur (conj result
                        (apply merge (map make-row (range 1 (+ 1 cols))))))
           result)))))
+
+(defn- slurp-result-set [rs meta]
+  (letfn [(make-row [col]
+            {(.getColumnLabel meta col) (.getString rs col)})
+          (next-row [cols]
+            (if (.next rs)
+              (apply merge (map make-row (range 1 (+ 1 cols))))))]
+    (let [cols (.getColumnCount meta)]
+      (take-while identity (repeatedly #(next-row cols))))))
 
 (defn result-set-to-array [rs]
   (let [meta (.getMetaData rs)
@@ -145,10 +161,12 @@
 
 (defn- check-interrupt [curr-query-no]
   (let [ieq @interrupt-execute-query]
+    (log/debugf "check interrupt: ieq=%s, query no: (%s == %s)"
+                ieq curr-query-no @query-no)
     (when (or ieq (not (= curr-query-no @query-no)))
       (-> (ex-info (format "Interrupt query: %s" ieq)
                    {:curr-query-no curr-query-no
-                    :interrupt-execute-query @interrupt-execute-query})
+                    :interrupt-execute-query ieq})
           throw))))
 
 (defn- execute-query-nowait
@@ -156,9 +174,11 @@
    (execute-query-nowait query nil))
   ([query query-handler-fn]
    (jdbc/with-db-connection [db @dbspec]
+     (swap! query-no inc)
      (let [conn (resolve-connection db)
            stmt (.createStatement conn)
            curr-query-no @query-no]
+       (log/debugf "query numbrer: %s" curr-query-no)
        (reset! query-thread (Thread/currentThread))
        (check-interrupt curr-query-no)
        (letfn [(pr-row-count [start rows]
@@ -209,10 +229,15 @@
   ([query]
    (execute-query query nil))
   ([query query-handler-fn]
-   (reset! interrupt-execute-query nil)
-   (let [query-fut (future (execute-query-nowait query query-handler-fn))
-         wait-fut (wait-atom-or-future interrupt-execute-query query-fut 1000)]
-     (deref wait-fut))))
+   (assert-connection)
+   (if (not (conf/config :sigintercept))
+     (execute-query-nowait query query-handler-fn)
+     (do
+       (reset! interrupt-execute-query nil)
+       (let [query-fut (future (execute-query-nowait query query-handler-fn))
+             wait-fut (wait-atom-or-future interrupt-execute-query query-fut 1000)]
+         (deref wait-fut)
+         (log/debugf "execute wait on feature complete"))))))
 
 (defn show-table-metadata
   ([]
@@ -242,11 +267,15 @@
                (let [newstate (cond (nil? state) true
                                     true 'kill)]
                  (log/debugf "state: %s -> %s" state newstate)
-                 newstate))))))
+                 newstate))))
+    (log/debugf "set state to %s" @interrupt-execute-query)))
 
-
-(->> (proxy [SignalHandler] []
-       (handle [s]
-         (log/debugf "signal: %s" s)
-         (interrupt s)))
-     (Signal/handle (Signal. "INT")))
+(defn configure-db-access
+  "Add the JVM level signal handler and other resources."
+  []
+  ;; configure the signal handler
+  (->> (proxy [SignalHandler] []
+         (handle [s]
+           (log/debugf "signal: %s" s)
+           (interrupt s)))
+       (Signal/handle (Signal. "INT"))))

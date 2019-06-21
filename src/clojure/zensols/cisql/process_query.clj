@@ -8,7 +8,6 @@
             [zensols.actioncli.parse :as parse :refer (with-exception)]
             [zensols.cisql.conf :as conf]
             [zensols.cisql.db-access :as db]
-            [zensols.cisql.table-export :as te]
             [zensols.cisql.read :as r]
             [zensols.cisql.directive :as di]))
 
@@ -64,30 +63,34 @@
       (when (= :end-of-query directive)
         (recur (r/read-query))))))
 
-(defn- assert-connection []
-  (let [conn? (db/connected?)]
-    (log/debugf "connected: %s" conn?)
-    (if-not conn?
-      (binding [parse/*include-program-in-errors* false]
-        (->> ["no connection; 'connect help'"]
-             parse/print-error-message)))
-    conn?))
+(defn- init-thread-exception-handler
+  "Configure a default exception handler so we swallow exceptions in forked
+  threads."
+  []
+  (Thread/setDefaultUncaughtExceptionHandler
+   (reify Thread$UncaughtExceptionHandler
+     (uncaughtException [_ thread ex]
+       (log/error ex "Uncaught exception on" (.getName thread))))))
 
 (defn start-event-loop
   "Start the command event loop using standard in/out."
   []
+  (init-thread-exception-handler)
   (di/init-grammer)
+  (db/configure-db-access)
   (while true
     (try
       (binding [r/*std-in* (BufferedReader. (InputStreamReader. System/in))]
         (process-queries
          {:end-of-query (fn [{:keys [query]}]
-                          (when (assert-connection)
-                            (db/execute-query query)
-                            (if query (reset! last-query query))))
+                          (db/assert-connection)
+                          (db/execute-query query)
+                          (if query
+                            (reset! last-query query)))
           :end-of-session (fn [_]
-                         (println "exiting...")
-                         (System/exit 0))
-          :end-file (fn [_] (System/exit 0))}))
+                            (println "exiting...")
+                            (System/exit 0))
+          :end-file (fn [_]
+                      (System/exit 0))}))
       (catch Exception e
         (log/error e)))))

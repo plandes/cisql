@@ -38,12 +38,15 @@ downloads the JDBC drivers."
 (defn- resource-driver-meta
   "Parse the CSV resource JDBC driver registry."
   []
-  (with-open [reader (io/reader (io/resource "driver.csv"))]
-    (->> (csv/read-csv reader)
-         rows-to-maps
-         (map (fn [mrow]
-                {(:name mrow) (dissoc mrow :name)}))
-         (apply merge))))
+  (let [fields [:group :artifact :version]]
+    (with-open [reader (io/reader (io/resource "driver.csv"))]
+      (->> (csv/read-csv reader)
+           rows-to-maps
+           (map (fn [mrow]
+                  (let [dep (select-keys mrow fields)]
+                    {(:name mrow) (-> (apply dissoc mrow (conj fields :name))
+                                      (assoc :dependency [dep]))})))
+           (apply merge)))))
 
 (defn- create-driver-meta
   "Create the driver metadata by parsing the driver information CSV."
@@ -64,15 +67,21 @@ downloads the JDBC drivers."
    (swap! driver-meta-inst #(or % (create-driver-meta)))))
 
 (defn- format-dependency [{:keys [artifact group version]}]
-  (format "[[%s/%s \"%s\"]]" group artifact version))
+  (format "[%s/%s \"%s\"]" group artifact version))
+
+(defn- meta-to-dependencies [meta]
+  (let [dependencies (or (:dependency meta) (:dependencies meta))]
+   (->> (if (sequential? dependencies)
+          dependencies
+          [dependencies])
+        (map #(read-string (format-dependency %))))))
 
 (defn- load-dependencies
   "Download and class load a JDBC driver."
   [meta]
-  (let [dep (format-dependency meta)]
-    (log/infof "loading dependencies for %s" dep)
-    (->> (read-string dep)
-         (add-dependencies :coordinates))))
+  (let [deps (meta-to-dependencies meta)]
+    (log/infof "loading dependencies for %s" (vec deps))
+    (add-dependencies :coordinates deps)))
 
 (defn- create-db-spec
   "Create a Clojure JDBC database spec (`db-spec`)."
@@ -125,11 +134,14 @@ downloads the JDBC drivers."
   []
   (->> (driver-meta) keys))
 
-(defn- opts-to-flat [{:keys [dependency] :as opts}]
-  (let [manditory-keys [:class :url :name :dependency]
+(defn- opts-to-flat [{:keys [dependencies] :as opts}]
+  (let [manditory-keys [:class :url :name :dependencies]
         optional-keys [:port]
-        [group artifact version] (if dependency
-                                   (s/split dependency #"/"))]
+        dl (->> (s/split dependencies #",")
+                (map (fn [dep]
+                       (let [[group artifact version]
+                             (s/split dep #"/")]
+                         {:group group :artifact artifact :version version}))))]
     (->> manditory-keys
          (map (fn [okey]
                 (if-not (contains? opts okey)
@@ -140,7 +152,7 @@ downloads the JDBC drivers."
          (concat optional-keys)
          (select-keys opts)
          (#(rename-keys % {:port :default-port}))
-         (#(assoc % :group group :artifact artifact :version version)))))
+         (#(assoc % :dependencies dl)))))
 
 (defn- put-flat [flat]
   (log/debugf "adding <%s>" (pr-str flat))
@@ -180,9 +192,9 @@ downloads the JDBC drivers."
                      (map #(format fmt
                                    (clojure.core/name %)
                                    (or (get meta %) "*none*")))
-                     (#(concat % (->> (format-dependency meta)
-                                      read-string first pr-str
-                                      (format fmt "dependency")
+                     (#(concat % (->> (meta-to-dependencies meta)
+                                      ((fn [d] (s/join ", " d)))
+                                      (format fmt "dependencies")
                                       list)))
                      (cons (format "* %s:" name))
                      (s/join \newline)))))
@@ -200,6 +212,15 @@ downloads the JDBC drivers."
    :app (fn [opts & args]
           (print-drivers))})
 
+(defn driver-add [name opts]
+  (log/infof "loading driver: %s" name)
+  (binding [parse/*rethrow-error* (conf/config :prex)]
+    (with-exception
+      (let [flat (opts-to-flat opts)]
+        (load-dependencies flat)
+        (put-flat flat)
+        (reset)))))
+
 (def driver-add-command
   "CLI command to install a JDBC driver."
   {:description "Install a driver to the user's local JDBC registry"
@@ -216,16 +237,10 @@ downloads the JDBC drivers."
      :validate [#(< 0 % 0x10000) "Must be a number between 0 and 65536"]]
     ["-c" "--class" "JDBC driver class (ex: org.sqlite.JDBC)"
      :required "<string>"]
-    ["-d" "--dependency" "maven group ID coordinate element (ex: org.mysql/mysql-connector/5.1.35)"
+    ["-d" "--dependencies" "a comma separated list of maven group ID coordinate elements (ex: org.mysql/mysql-connector/5.1.35)"
      :required "<string>"]]
    :app (fn [{:keys [name] :as opts} & args]
-          (log/infof "loading driver: %s" name)
-          (binding [parse/*rethrow-error* (conf/config :prex)]
-            (with-exception
-              (let [flat (opts-to-flat opts)]
-                (load-dependencies flat)
-                (put-flat flat)
-                (reset)))))})
+          (driver-add name opts))})
 
 (def driver-user-registry-purge-command
   "CLI command to install a JDBC driver."
@@ -236,6 +251,6 @@ downloads the JDBC drivers."
           (binding [parse/*rethrow-error* (conf/config :prex)]
             (with-exception
               (lu/change-log-level "info")
-              (pref/clear)
+              (pref/clear :var 'driver)
               (reset)
               (log/info "user's local JDBC registry purged"))))})

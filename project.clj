@@ -17,9 +17,7 @@
   :java-source-paths ["src/java"]
   :javac-options ["-Xlint:unchecked"]
   :jar-exclusions [#".gitignore"]
-  :exclusions [org.slf4j/slf4j-log4j12
-               ch.qos.logback/logback-classic]
-  :dependencies [[org.clojure/clojure "1.8.0"]
+  :dependencies [[org.clojure/clojure "1.9.0"]
 
                  ;; api
                  [org.clojure/java.jdbc "0.6.1"]
@@ -28,9 +26,7 @@
                  [org.clojure/data.csv "0.1.2"]
 
                  ;; driver dep download
-                 [com.cemerick/pomegranate "0.3.1"
-                  :exclusions [ch.qos.logback/logback-classic
-                               org.slf4j/slf4j-log4j12]]
+                 [com.cemerick/pomegranate "0.3.1"]
 
                  ;; gui
                  [com.zensols.gui/tabres "0.0.6"]
@@ -58,7 +54,8 @@
                                   [:environmentSetupFileName "setupenv"])}]]
   :profiles {:1.9 {:dependencies [[org.clojure/clojure "1.9.0"]]}
              :1.10 {:dependencies [[org.clojure/clojure "1.10.0"]]}
-             :uberjar {:aot :all}
+                                        ;:uberjar {:aot :all}
+             :uberjar {:aot [zensols.cisql.core]}
              :appassem {:aot :all}
              :snapshot {:git-version {:version-cmd "echo -snapshot"}}
              :test
