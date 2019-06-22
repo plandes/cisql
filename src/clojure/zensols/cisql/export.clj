@@ -31,14 +31,13 @@ This includes functions to export to CSV files and adhoc Clojure functions."
   (log/debugf "last query: %s" last-query)
   (let [narrowed (or query last-query)]
     (if-not narrowed
-      (binding [*out* *err*]
-        (-> "no queued query (skip the query delimiter (%s) after SQL)"
-            (format (conf/config :linesep))
-            (ex-info {:query query
-                      :last-query last-query})
-            throw)))
+      (-> "no queued query (skip the query delimiter (%s) after SQL)"
+          (format (conf/config :linesep))
+          (ex-info {:query query
+                    :last-query last-query})
+          throw))
     (if-not query
-      (println "no queued query so using the last executed"))
+      (log/infof "no queued query so using the last executed"))
     narrowed))
 
 (defn export-query-to-csv
@@ -47,23 +46,38 @@ This includes functions to export to CSV files and adhoc Clojure functions."
   (-> (narrow-query query last-query)
       (export-table-csv csv-name)))
 
+(defn- function-by-name
+  "Export result set output to a the last defined Clojure function in a file."
+  [clj-file fn-name]
+  (let [last-fn (load-file clj-file)
+        handler-fn (if (nil? fn-name)
+                     last-fn
+                     (-> (:ns (meta last-fn))
+                         ns-name
+                         (ns-resolve (symbol fn-name))))]
+    (or handler-fn
+        (-> (format "no such function %s found in file %s" fn-name clj-file)
+            (ex-info {:file clj-file :fn-name fn-name})
+            throw))))
+
 (defn export-query-to-function
   "Export result set output to a the last defined Clojure function in a file."
-  [query last-query clj-file]
-  (let [handler-fn (load-file clj-file)
-        title (name (:name (meta handler-fn)))
+  [query last-query clj-file fn-name]
+  (let [handler-fn (function-by-name clj-file fn-name)
+        fn-name (name (:name (meta handler-fn)))
         res-inst (atom nil)]
     (letfn [(rs-handler [rs _]
               (let [rs-data (db/result-set-to-array rs :make-string? false)
                     {:keys [header rows]} rs-data]
                 (reset! res-inst (handler-fn rows header))
                 (count (:rows rs-data))))]
+      (log/infof "evaluating function %s" fn-name)
       (-> (narrow-query query last-query)
           (db/execute-query rs-handler))
       (let [res @res-inst
             {:keys [display]} res]
         (if display
-          (db/display-results (:rows display) (:header display) title)
+          (db/display-results (:rows display) (:header display) fn-name)
           (if res
             (println res)))))))
 

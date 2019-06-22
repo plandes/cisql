@@ -141,6 +141,13 @@
                    (format "%s: %s" vkey)
                    println)
               (conf/print-key-values))))}
+   {:name "rm"
+    :arg-count 1
+    :usage "<variable>"
+    :desc "delete user variable"
+    :fn (fn [opts [name]]
+          (assert-no-query opts)
+          (conf/remove-config (keyword name)))}
    {:name "set"
     :arg-count "*"
     :usage "<variable> [value]"
@@ -159,9 +166,9 @@
             (if (= :linesep key)
               (init-grammer))
             (println (format "%s: %s -> %s" (name key) oldval newval))))}
-   {:name "resetenv"
+   {:name "resetvar"
     :arg-count 0
-    :desc "Reset all environment settings"
+    :desc "Reset all variables to their nascient state"
     :fn (fn [opts [driver-name]]
           (assert-no-query opts)
           (conf/reset))}
@@ -215,11 +222,18 @@
     :fn (fn [{:keys [query last-query]} [csv-name]]
           (ex/export-query-to-csv query last-query csv-name))}
    {:name "load"
-    :arg-count 1
-    :usage "<clojure file>"
-    :desc "evaluate a query with the last function in a clojure file"
-    :fn (fn [{:keys [query last-query]} [clj-file]]
-          (ex/export-query-to-function query last-query clj-file))}
+    :arg-count "*"
+    :usage "[clojure file] [function-name]"
+    :desc "evaluate a query with a function (defaults to last) a clojure file (default to cisql.clj)"
+    :fn (fn [{:keys [query last-query]} args]
+          (let [clj-file (if (> (count args) 0)
+                           (first args)
+                           "cisql.clj")
+                fn-name (if (> (count args) 1)
+                            (second args))]
+            (if (> (count args) 2)
+              (throw (ex-info "invalid load syntax; try 'help'" {})))
+           (ex/export-query-to-function query last-query clj-file fn-name)))}
    {:name "eval"
     :arg-count "*"
     :usage "<clojure code>"
