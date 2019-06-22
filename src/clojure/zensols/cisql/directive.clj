@@ -212,4 +212,16 @@
     :usage "<csv file>"
     :desc "export the the query on the previous line (no delimiter ';')) to a CSV file"
     :fn (fn [{:keys [query last-query]} [csv-name]]
-          (ex/export-query-to-csv query last-query csv-name))}])
+          (ex/export-query-to-csv query last-query csv-name))}
+   {:name "load"
+    :arg-count 1
+    :usage "<clojure file>"
+    :desc "evaluate the last function in a clojure file"
+    :fn (fn [{:keys [query last-query]} [clj-file]]
+          (ex/export-query-to-function query last-query clj-file))}
+   {:name "eval"
+    :arg-count "*"
+    :usage "<Clojure code>"
+    :desc "evaluate clojure code"
+    :fn (fn [{:keys [query last-query]} [code]]
+          (ex/export-query-to-eval query last-query code))}])

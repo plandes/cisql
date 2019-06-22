@@ -6,18 +6,23 @@
             [zensols.cisql.version :as ver]
             [zensols.cisql.pref :as pref]))
 
+(def ^:private var-meta
+  [[:gui false "use a graphical window to display result sets"]
+   [:guinotrey true "use a separate application entry for GUI results (require restart)"]
+   ;[:col 80 "width of output"]
+   [:linesep ";" "tell where to end a query and then send"]
+   [:loglevel "info" "the logging verbosity (<error|warn|info|debug|trace>)"]
+   [:errorlong false "if true, provide more SQL level error information"]
+   [:prex false "print exception stack traces"]
+   [:prompt " %1$s > " "a format string for the promp"]
+   [:sigintercept true "if true, intercept signals like Control-C during queries"]
+   [:end-directive "exit" "string used to exit the program"]
+   [:help-directive "help" "string used to print help"]])
+
 (def ^:private default-config
-  {:gui false
-   :guinotrey true
-   :linesep ";"
-   :loglevel "info"
-   :errorlong false
-   :prompt " %1$s > "
-   :end-directive "exit"
-   :help-directive "help"
-   :sigintercept true
-   :prex false
-   :col 80})
+  (->> var-meta
+       (map #(array-map (first %) (second %)))
+       (apply merge)))
 
 (def ^:private system-properties
   {:guinotrey "apple.awt.UIElement"})
@@ -29,24 +34,10 @@
 (def ^:private parse-keys
   #{:errorlong :gui})
 
-(def ^:private key-desc
-  {:gui "use a graphical window to display result sets"
-   :guinotrey "use a separate application entry for GUI results (require restart)"
-   :linesep "tell where to end a query and then send"
-   :prompt "a format string for the promp"
-   :loglevel "the logging verbosity (<error|warn|info|debug|trace>)"
-   :errorlong "if true, provide more error information"
-   :sigintercept "if true, intercept signals like Control-C during queries"
-   :prex "print exception stack traces"})
-
 (def ^:private help-message
   "type 'help' to see a list of commands")
 
 (def ^:private our-ns *ns*)
-
-;; (System/setProperty "java.awt.headless" "true")
-;; (System/setProperty "apple.laf.useScreenMenuBar" "true")
-(System/setProperty "com.apple.mrj.application.apple.menu.about.name" "ImageRotator")
 
 (defn- update-system-properties [key value]
   (let [k (get system-properties key)
@@ -89,20 +80,26 @@
              prefs))))
 
 (defn config [key]
-  (get (config-data) key))
+  (if (nil? key)
+    (config-data)
+    (get (config-data) key)))
 
 (defn print-key-values []
-  (->> (config-data)
-       (map (fn [[key val]]
-              (println (format "%s: %s "(name key) val))))
-       doall))
+  (let [conf (config-data)]
+    (->> (map first var-meta)
+         (map (fn [key]
+                (println (format "%s: %s "(name key) (get conf key)))))
+         doall)))
 
 (defn print-key-desc []
-  (let [dkeys (keys key-desc)
-        space (->> dkeys (map #(-> % name count)) (reduce max) (max 0) (+ 2))
+  (let [space (->> (map first var-meta)
+                   (map #(-> % name count))
+                   (reduce max)
+                   (max 0)
+                   (+ 2))
         fmt (str "%-" space "s %s")]
-    (->> key-desc
-         (map (fn [[k v]]
+    (->> var-meta
+         (map (fn [[k d v]]
                 (println (format fmt (str (name k)) v))))
          doall)))
 

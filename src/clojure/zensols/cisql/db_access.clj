@@ -122,11 +122,15 @@
   (if sqlex (println (format-sql-exception sqlex))))
 
 (defn- slurp-result-set
-  "Return a lazy list of maps representing result set `rs` with table metadata
-  `meta`."
-  [rs meta]
+  "Return a lazy list of maps representing result set **rs** with table metadata
+  **meta**.  If key :make-string? is non-nil all data is returned as strings."
+  [rs meta & {:keys [make-string?]
+              :or {make-string? true}}]
   (letfn [(make-row [col]
-            {(.getColumnLabel meta col) (.getString rs col)})
+            {(.getColumnLabel meta col)
+             (if make-string?
+               (.getString rs col)
+               (.getObject rs col))})
           (next-row [cols]
             (if (.next rs)
               (apply merge (map make-row (range 1 (+ 1 cols))))))]
@@ -134,26 +138,28 @@
       (take-while identity (repeatedly #(next-row cols))))))
 
 (defn result-set-to-array
-  "Return result set `rs` as an array of rows and column names.
+  "Return result set **rs** as an array of rows and column names.
 
-Parameters:
+Return a map with entries:
   * **header**: the column header data
   * **rows**: a lazy list of maps each representing a row from the result set."
-  [rs]
+  [rs & opts]
   (let [meta (.getMetaData rs)
         col-count (.getColumnCount meta)
         ;; must for SQLite: get headers before the result set is used up
         header (doall (map #(.getColumnLabel meta %)
                            (range 1 (+ 1 col-count))))
-        rows (slurp-result-set rs meta)]
+        rows (apply slurp-result-set rs meta opts)]
     (log/debugf "col-count %d" col-count)
     {:header header
      :rows (if (empty? rows) [{}] rows)}))
 
 (defn- display-result-set
-  "Display result set `rs` either by printing it out to standard out or
-  displaying it in a GUI table window.  The parameter `meta` is the meta data
-  object from `rs`."
+  "Display result set **rs** either by printing it out to standard out or
+  displaying it in a GUI table window.  The parameter **meta** is the meta data
+  object from **rs**.
+
+  See [[zensols.cisql.export/display-results]]."
   [rs meta]
   (try
     (if (conf/config :gui)
@@ -166,7 +172,7 @@ Parameters:
          (fn [frame]
            (.displayResults (.getResultSetPanel frame)
                             rs true))
-                             :title (db-id-format)))
+         :title (db-id-format)))
       (let [rs-data (result-set-to-array rs)]
         (print-table (:header rs-data) (:rows rs-data))
         (count (:rows rs-data))))
@@ -190,7 +196,7 @@ Parameters:
           throw))))
 
 (defn- execute-query-nowait
-  "Execute SQL `query` using optional `query-handler-fn` function with the
+  "Execute SQL **query** using optional **query-handler-fn** function with the
   results."
   ([query]
    (execute-query-nowait query nil))
@@ -263,7 +269,7 @@ Parameters:
          (log/debugf "execute wait on feature complete"))))))
 
 (defn show-table-metadata
-  "Display the meta data of `table`, which includes column names and metadata."
+  "Display the meta data of **table**, which includes column names and metadata."
   ([]
    (show-table-metadata nil))
   ([table]
