@@ -72,19 +72,10 @@
                   (println (format fmt decl desc)))))
          doall)))
 
-(defn- print-help []
-  (println "commands:")
-  (print-command-help)
-  (println)
-  (println "variables:")
-  (conf/print-key-desc))
-
-(defn- grammer []
-  (->> (directives)
-       (map #(select-keys % [:name :arg-count]))))
-
 (defn init-grammer []
-  (r/set-grammer (conf/config :linesep) (grammer)))
+  (r/set-grammer (conf/config :linesep)
+                 (->> (directives)
+                      (map #(select-keys % [:name :arg-count])))))
 
 (defn directives-by-name []
   (let [dirs (directives)]
@@ -105,7 +96,11 @@
   [{:name "help"
     :arg-count 0
     :fn (fn [& _]
-          (print-help))}
+          (println "commands:")
+          (print-command-help)
+          (println)
+          (println "variables:")
+          (conf/print-key-desc))}
    (command-line-directive "conn" "connect to a database (try 'help')"
                            'zensols.cisql.interactive 'interactive-directive
                            "<help|driver [options]>")

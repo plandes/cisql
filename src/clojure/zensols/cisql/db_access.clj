@@ -46,6 +46,9 @@ print and display result sets."
   "The regular expression to identify a table meta data query."
   #"^\s*select\s*from\s*@@(?:(.+)\.)?meta")
 
+(def ^:private meta-query-format
+  "select from @@%smeta;")
+
 (def ^:private last-frame-type
   "The state of the last type of frame used to display results."
   (atom nil))
@@ -297,7 +300,8 @@ Return a map with entries:
                          (log/error (format-sql-exception e)))))))
         (execute-jdbc-query query query-handler-fn db)))))
 
-(defn- wait-atom-or-future
+(defn- poll-for-quit
+  "Poll on the @quit-atom, which is set by a user interruption signal."
   [quit-atom fut timeout]
   (log/debugf "future done? %s" (future-done? fut))
   (letfn [(func []
@@ -311,6 +315,9 @@ Return a map with entries:
     (future (func))))
 
 (defn execute-query
+  "Execute SQL **query** on the JDBC driver using function **query-handler-fn**
+  to process the results.  If **query-handler-fn** is not given then print or
+  display the results in the GUI frame."
   ([query]
    (execute-query query display-result-set))
   ([query query-handler-fn]
@@ -320,7 +327,7 @@ Return a map with entries:
      (do
        (reset! interrupt-execute-query nil)
        (let [query-fut (future (execute-query-nowait query query-handler-fn))
-             wait-fut (wait-atom-or-future interrupt-execute-query query-fut 1000)]
+             wait-fut (poll-for-quit interrupt-execute-query query-fut 1000)]
          (deref wait-fut)
          (log/debugf "execute wait on feature complete"))))))
 
@@ -329,15 +336,9 @@ Return a map with entries:
   ([]
    (show-table-metadata nil))
   ([table]
-   (jdbc/with-db-connection [db @dbspec]
-     (let [conn (resolve-connection db)
-           dbmeta (.getMetaData conn)
-           rs (if table
-                (.getColumns dbmeta nil nil table "%")
-                (.getTables dbmeta nil nil "%" nil))
-           meta (.getMetaData rs)]
-       (display-result-set rs meta)
-       (reset! last-frame-label (format "table: %s" table))))))
+   (let [query (format meta-query-format (if table (str table ".") ""))]
+     (execute-query query))
+   (reset! last-frame-label (format "table: %s" table))))
 
 (defn- interrupt
   "The signal handler will first put the state in the *interrupt* state.  If the
