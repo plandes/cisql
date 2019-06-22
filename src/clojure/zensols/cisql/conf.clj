@@ -52,8 +52,20 @@
 
 (add-set-config-hook update-system-properties)
 
+(defn- config-data []
+  (swap! config-data-inst
+         (fn [prefs]
+           (if (nil? prefs)
+             (let [prefs (pref/environment default-config)]
+               (doseq [[k v] prefs]
+                 (doseq [callback @set-config-hooks]
+                   ((eval callback) k v)))
+               prefs)
+             prefs))))
+
 (defn set-config [key value]
   (log/tracef "%s -> %s" key value)
+  (config-data)
   (if-not (contains? default-config key)
     (-> (format "no such variable: %s" (name key))
         (ex-info {:key key :value value})
@@ -67,17 +79,6 @@
       ((eval callback) key value))
     (pref/set-environment @config-data-inst)
     (log/tracef "vars: %s" @config-data-inst)))
-
-(defn- config-data []
-  (swap! config-data-inst
-         (fn [prefs]
-           (if (nil? prefs)
-             (let [prefs (pref/environment default-config)]
-               (doseq [[k v] prefs]
-                 (doseq [callback @set-config-hooks]
-                   ((eval callback) k v)))
-               prefs)
-             prefs))))
 
 (defn config [key]
   (if (nil? key)
