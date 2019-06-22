@@ -11,19 +11,33 @@
             [zensols.actioncli.parse :as parse]
             [zensols.cisql.conf :as conf]))
 
-(def ^:private dbspec (atom nil))
+(def ^:private dbspec
+  "The jdbc package database spec and contains the DB host name, port etc."
+  (atom nil))
 
-(def ^:private current-catalog (atom nil))
+(def ^:private current-catalog
+  "For catalog based systems this contains the name of the catalog."
+  (atom nil))
 
-(def ^:private db-info-data (atom nil))
+(def ^:private db-info-data
+  "Information about the current database connection (i.e. user, URL)."
+  (atom nil))
 
-(def ^:private last-frame-label (atom nil))
+(def ^:private last-frame-label
+  "The last *label* (frame title) of the results frame of the last query."
+  (atom nil))
 
-(def ^:private interrupt-execute-query (atom nil))
+(def ^:private interrupt-execute-query
+  "The state of the interrupt.  See [[interrupt]]."
+  (atom nil))
 
-(def ^:private query-thread (atom nil))
+(def ^:private query-thread
+  "The thread of the active query."
+  (atom nil))
 
-(def ^:private query-no (atom 0))
+(def ^:private query-no
+  "The nth query, and used for thread syncs."
+  (atom 0))
 
 (defn- resolve-connection [db]
   (let [conn (jdbc/db-connection db)
@@ -107,17 +121,10 @@
 (defn- print-sql-exception [sqlex]
   (if sqlex (println (format-sql-exception sqlex))))
 
-(defn- slurp-result-set-nolazy [rs meta]
-  (letfn [(make-row [col]
-            {(.getColumnLabel meta col) (.getString rs col)})]
-    (let [cols (.getColumnCount meta)]
-      (loop [result []]
-        (if (.next rs)
-          (recur (conj result
-                       (apply merge (map make-row (range 1 (+ 1 cols))))))
-          result)))))
-
-(defn- slurp-result-set [rs meta]
+(defn- slurp-result-set
+  "Return a lazy list of maps representing result set `rs` with table metadata
+  `meta`."
+  [rs meta]
   (letfn [(make-row [col]
             {(.getColumnLabel meta col) (.getString rs col)})
           (next-row [cols]
@@ -126,7 +133,13 @@
     (let [cols (.getColumnCount meta)]
       (take-while identity (repeatedly #(next-row cols))))))
 
-(defn result-set-to-array [rs]
+(defn result-set-to-array
+  "Return result set `rs` as an array of rows and column names.
+
+Parameters:
+  * **header**: the column header data
+  * **rows**: a lazy list of maps each representing a row from the result set."
+  [rs]
   (let [meta (.getMetaData rs)
         col-count (.getColumnCount meta)
         ;; must for SQLite: get headers before the result set is used up
@@ -137,7 +150,11 @@
     {:header header
      :rows (if (empty? rows) [{}] rows)}))
 
-(defn- display-result-set [rs meta]
+(defn- display-result-set
+  "Display result set `rs` either by printing it out to standard out or
+  displaying it in a GUI table window.  The parameter `meta` is the meta data
+  object from `rs`."
+  [rs meta]
   (try
     (if (conf/config :gui)
       (binding [dis/frame-factory-fn
@@ -159,7 +176,10 @@
         (catch SQLException e
           (log/error (format-sql-exception e)))))))
 
-(defn- check-interrupt [curr-query-no]
+(defn- check-interrupt
+  "Throw an exception if an interrupt (signal) has occured or if queries are out
+  of order."
+  [curr-query-no]
   (let [ieq @interrupt-execute-query]
     (log/debugf "check interrupt: ieq=%s, query no: (%s == %s)"
                 ieq curr-query-no @query-no)
@@ -170,6 +190,8 @@
           throw))))
 
 (defn- execute-query-nowait
+  "Execute SQL `query` using optional `query-handler-fn` function with the
+  results."
   ([query]
    (execute-query-nowait query nil))
   ([query query-handler-fn]
@@ -240,6 +262,7 @@
          (log/debugf "execute wait on feature complete"))))))
 
 (defn show-table-metadata
+  "Display the meta data of `table`, which includes column names and metadata."
   ([]
    (show-table-metadata nil))
   ([table]
@@ -253,7 +276,12 @@
        (display-result-set rs meta)
        (reset! last-frame-label (format "table: %s" table))))))
 
-(defn- interrupt [signal]
+(defn- interrupt
+  "The signal handler will first put the state in the *interrupt* state.  If the
+  program gets a second signal while in this state, the state goes to *kill*.
+  In this state, the program *tries harder* (calls [[java.lang.Thread/stop]])
+  to quit the current query with the database."
+  [signal]
   (log/debugf "interrupting with signal: %s" signal)
   (let [ieq @interrupt-execute-query]
     (println)
