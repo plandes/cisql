@@ -115,7 +115,7 @@ The program keeps track of variables across sessions, which is persisted in
 using the Java persistence framework.  You can set a variable with the `set`
 directive.  For example, to set the prompt:
 ```sql
-set prompt 'darkstar$ '
+set prompt 'darkstar %1$s> '
 ```
 
 **Important**: To add white space you can use quote (single quote `'`) for
@@ -151,7 +151,10 @@ the query results.  Like the `eval` directive, this function takes the
 following parameters:
 * **rows**: a lazy sequence of maps, each map is a key/value set of column
   name to value.
-* **header**: a list of string column names
+* **header**: a list of string column names.
+
+
+#### Loading a File
 
 This example adds the string `Mrs` to each row for the `coder` column:
 ```clojure
@@ -168,8 +171,26 @@ This example adds the string `Mrs` to each row for the `coder` column:
         (array-map :display))))
 ```
 
+The following happens based on the output of this function:
+* **nil**: nothing happens
+* **a map with a :display key**: the `:header` and `:rows:` keys are used to
+  display the results just like any query
+* anything else: the value is printed
+
+Observe that you can write your functions to `printlin` anything just like any
+Clojure program and the output goes to the interactive window.
+
 **Important**: The function to evaluate must be the last symbolic expression in
 the file.
+
+
+#### Evaluation Directive
+
+Another more comprehensive example, which renames the `firstName` column to `name`:
+
+```clojure
+eval (fn [r h] {:display {:header ["name"] :rows (map #(array-map "name" (get % "firstName")) r)}})
+```
 
 
 ### Bad State
