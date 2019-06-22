@@ -285,8 +285,8 @@ Note that you can add multiple maven coordinates separated with a comma and no
 space, which is useful when you need to add license files.  In the case of
 license files that have no maven coordinates, you'll have to install the them
 as maven files yourself directly.  You can do this using the [maven install
-plugin] yourself or use the [install-maven-file](src/install-maven-file) PERL
-script, which provides slightly nicer syntax and help.
+plugin] yourself or use the [install-maven-file](src/sh/install-maven-file)
+PERL script, which provides slightly nicer syntax and help.
 
 
 #### SQLite
