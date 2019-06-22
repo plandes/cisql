@@ -235,7 +235,8 @@ Parameters:
              (reset! query-thread nil)
              (.close stmt))))))))
 
-(defn- wait-atom-or-future [quit-atom fut timeout]
+(defn- wait-atom-or-future
+  [quit-atom fut timeout]
   (log/debugf "future done? %s" (future-done? fut))
   (letfn [(func []
             (let [sym (gensym)]

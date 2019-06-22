@@ -57,9 +57,18 @@ An example of how to connect to an SQLlite database from the command line follow
 ```bash
 $ java -jar target/cisql.jar -n sqlite -d path/to/awards.sqlite
 Clojure Interactive SQL (cisql) v0.0.10
-(C) Paul Landes 2015 - 2017
+(C) Paul Landes 2015 - 2019
  1 >
 ```
+
+
+### Query
+
+Each line of input is either is a part or whole SQL query, or it is a
+`directive`.  A `directive` includes commands meant for the program itself.
+There are some directives that take queries as (usually optional) input like
+the `export` directive.  You can get a list of directives and how to use them
+using the `help` directive.
 
 
 ### Connecting to a Database

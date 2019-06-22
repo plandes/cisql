@@ -14,7 +14,9 @@
 
 (declare directives)
 
-(defn- assert-no-query [{:keys [query directive]}]
+(defn- assert-no-query
+  "Throw an exception if there's a current query that exists."
+  [{:keys [query directive]}]
   (if query
     (-> (format "unexpected query: %s" query)
         (ex-info {:query query
