@@ -1,16 +1,23 @@
-(ns zensols.cisql.cider-repl
+(ns ^{:doc "Provide support for Emacs Cider and nREPL."
+      :author "Paul Landes"}
+    zensols.cisql.cider-repl
   (:require [clojure.tools.logging :as log]
-            [nrepl.server :as nrepl-server]
-            [cider.nrepl :refer (cider-nrepl-handler)]))
+            [nrepl.server :as nrepl-server]))
 
 (def default-port 32345)
+
+(defn nrepl-handler
+  "Enables application level (even in uber jars) to handle Cider requests."
+  []
+  (require 'cider.nrepl)
+  (ns-resolve 'cider.nrepl 'cider-nrepl-handler))
 
 (defn run-server
   [port & {:keys [type] :or {type 'cider}}]
   (if (= type 'cider)
     (do
       (log/info "using cider")
-      (nrepl-server/start-server :port port :handler cider-nrepl-handler))
+      (nrepl-server/start-server :port port :handler (nrepl-handler)))
     (do
       (log/info "using nrepl (non cider)")
       (nrepl-server/start-server :port port))))
