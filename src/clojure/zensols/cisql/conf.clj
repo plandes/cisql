@@ -9,21 +9,30 @@ system."
             [zensols.cisql.pref :as pref]))
 
 (def ^:private var-meta
-  [[:strict true "if true, do not allow setting of free variables"]
+  [[:strict true "if true, do not allow setting of free variables"
+    "#built-in-and-user-variables"]
    [:linesep ";" "tell where to end a query and then send"]
    [:loglevel "info" "logging verbosity (<error|warn|info|debug|trace>)"]
    [:errorlong false "if true, provide more SQL level error information"]
    [:prex false "print exception stack traces"]
-   [:prompt " %1$s > " "a format string for the promp"]
+   [:prompt " %1$s > " "a format string for the promp"
+    "#variables"]
    [:sigintercept true "if true, intercept and break on Control-C signals"]
-   [:gui false "use a graphical window to display result sets"]
-   [:guiwin true "use separate window for GUI (require restart)"]
+   [:gui false "use a graphical window to display result sets"
+    "#graphical-results"]
+   [:guiwin true "use separate window for GUI (require restart)"
+    "#graphical-results"]
    [:end-directive "exit" "string used to exit the program"]
    [:help-directive "help" "string used to print help"]])
 
 (def ^:private default-config
   (->> var-meta
        (map #(array-map (first %) (second %)))
+       (apply merge)))
+
+(def ^:private help-sections
+  (->> var-meta
+       (map #(array-map (first %) (nth % 2)))
        (apply merge)))
 
 (def ^:private system-properties
@@ -79,7 +88,9 @@ system."
              throw))
        val))))
 
-(defn set-config [key value]
+(defn set-config
+  "Set variable with name **key** to **value** and save."
+  [key value]
   (log/tracef "%s -> %s" key value)
   (config)
   (if (and @config-data-inst (config :strict)
@@ -97,7 +108,9 @@ system."
     (pref/set-environment @config-data-inst)
     (log/tracef "vars: %s" @config-data-inst)))
 
-(defn remove-config [key]
+(defn remove-config
+  "Remove variable with name **key** and save."
+  [key]
   (if (contains? default-config key)
     (-> (format "can not delete built in variable: %s" key)
         (ex-info {:key key})
@@ -109,15 +122,19 @@ system."
   (swap! config-data-inst dissoc key)
   (pref/set-environment @config-data-inst))
 
-(defn- user-variable-names []
+(defn- user-variable-names
+  "Return a list of the variable keys in user space."
+  []
   (->> (keys default-config)
        set
        (difference (set (keys (config))))))
 
-(defn print-key-values []
+(defn print-key-values
+  "Print state of variable key/value pairs as markdown."
+  []
   (let [conf (config)]
     (letfn [(pr-conf [key]
-              (println (format "* %s: %s "(name key) (get conf key))))]
+              (println (format " * %s: %s "(name key) (get conf key))))]
       (println "# Built in variables:")
       (->> (map first var-meta)
            (map pr-conf)
@@ -127,7 +144,9 @@ system."
            (map pr-conf)
            doall))))
 
-(defn print-key-desc [space]
+(defn print-key-desc
+  "Print variable names and documentation as markdown."
+  [space]
   (let [space (or space 0)
         space (->> (map first var-meta)
                    (map #(-> % name count))
@@ -135,13 +154,20 @@ system."
                    (max 0)
                    inc
                    (max space))
-        fmt (str "* %-" space "s %s")]
+        fmt (str " * %-" space "s %s")]
     (->> var-meta
          (map (fn [[k d v]]
                 (println (format fmt (str (name k)) v))))
          doall)))
 
-(defn reset []
+(defn help-section
+  "Return help section for the variable with **key** if there is one."
+  [key]
+  (get help-sections key))
+
+(defn reset
+  "Reset **all** variable data to it's initial nascent state."
+  []
   (pref/clear :var 'environment)
   (reset! config-data-inst nil)
   (config))

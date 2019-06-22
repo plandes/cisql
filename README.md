@@ -49,8 +49,10 @@ Features include:
         - [SQLite](#sqlite)
         - [Apache Drill](#apache-drill)
     - [Querying the database](#querying-the-database)
+    - [Removing JDBC Drivers](#removing-jdbc-drivers)
 - [Emacs Integration](#emacs-integration)
 - [Documentation](#documentation)
+    - [API Documentation](#api-documentation)
 - [Changelog](#changelog)
 - [License](#license)
 
@@ -63,6 +65,10 @@ The latest release binaries are available as a [stand alone Java jar file].
 
 
 ## Usage
+
+The program is a command line console application that provides a prompt in a
+command event loop.  Each text typed followed by **return** is interpreted as
+SQL to be sent to the database or a `directive` (see [queries-and-directives]).
 
 You can specify command line arguments to connect to a database or you can
 connect (and re-connect) while in the command event loop of the program.
@@ -91,10 +97,10 @@ additional help for directives, type `help <directive name>`.
 ### Queries and Directives
 
 Each line of input is either is a part or whole SQL query, or it is a
-`directive`.  A `directive` includes commands meant for the program itself.
-There are some directives that take queries as (usually optional) input like
-the `export` directive.  You can get a list of directives and how to use them
-using the `help` directive.
+`directive`.  A `directive` includes commands meant for the command event loop
+of the program.  There are some directives that take queries as (usually
+optional) input like the `export` directive.  You can get a list of directives
+and how to use them using the `help` directive.
 
 Every SQL query given is stored even after the results are retrieved from the
 database and displayed.  This query is referred to as the *last query* and is
@@ -174,7 +180,7 @@ User defined variables can be unset/removed with the `rm` directive.
 A crude macro system is available with the `do` directive, which takes a list
 of [user variable](#built-in-and-user-variables) names as input.  For each
 variable name given, it invokes the contents of the value of the variable as if
-it were given on the command line.  For example:
+it were given on the command event loop of the program.  For example:
 ```sql
 set sela 'select * from annotations limit 5;'
 set selc 'select * from coders;'
@@ -188,7 +194,7 @@ First connects to an SQLite database, and executes two `select` statements.
 
 As mentioned in the [section on variables](#variables), use `tg gui` to switch
 between using a GUI based frame to report results and a text based table in the
-same command line window.
+command event loop of the program.
 
 By default each query replaces the results of the last.  However, you can
 create multiple windows to compare results by using the `orph` directive.  This
@@ -330,7 +336,8 @@ can be used.
 
 ### Connecting to a Database
 
-The connection usage is the same in the event loop and on the command line:
+The connection usage is the same in the event loop and on the command line.  In
+the event loop you can use the `conn` directive:
 
 ```sql
  1 > conn help
@@ -462,6 +469,12 @@ The last command creates a new `.csv` spreadsheet file shown below:
 ![Spreadsheet .csv](https://plandes.github.io/cisql/img/spreadsheet-export.png)
 
 
+### Removing JDBC Drivers
+
+Use the `removedrv` to remove a JDBC driver.  Note this only removes the entry
+in the configuration and not the driver jar in the maven repository on disk.
+
+
 ## Emacs Integration
 
 If you're an Emacs user, the [ciSQL] library is available, which integrates
@@ -474,6 +487,19 @@ an even deeper way of integrating data base access with Clojure.  See the
 
 
 ## Documentation
+
+The command event loop of the program provides a `man` directive to go to
+documentation about a specific directive or variable, which is this page.  For
+example:
+
+```sql
+man conn
+```
+
+Starts a web browser that goes to this section.
+
+
+### API Documentation
 
 This program is written in Clojure.  See the API
 [documentation](https://plandes.github.io/cisql/codox/index.html).

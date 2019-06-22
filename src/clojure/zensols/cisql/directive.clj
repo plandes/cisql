@@ -5,6 +5,7 @@ See README.md for more information on directives."
     zensols.cisql.directive
   (:require [clojure.tools.logging :as log]
             [clojure.string :as s]
+            [clojure.java.browse :as browse]
             [zensols.actioncli.log4j2 :as lu]
             [zensols.actioncli.parse :as parse]
             [zensols.cisql.version :as ver]
@@ -17,6 +18,10 @@ See README.md for more information on directives."
             [zensols.cisql.cider-repl :as repl]))
 
 (declare directives)
+
+(def ^:private man-url-format
+  "The README.md GitHub URL to browse for the `man` directive command."
+  "https://github.com/plandes/cisql#%s")
 
 (defn directives-by-name
   "Return a map of the directives using their names as keys.
@@ -61,12 +66,13 @@ See README.md for more information on directives."
 
 (defn- command-line-directive
   ([name desc ns-sym func-sym]
-   (command-line-directive name desc ns-sym func-sym "<help|[options]>"))
-  ([name desc ns-sym func-sym usage]
+   (command-line-directive name desc ns-sym func-sym nil nil))
+  ([name desc ns-sym func-sym usage help-section]
    {:name name
     :arg-count "*"
-    :usage usage
+    :usage (or usage "<help|[options]>")
     :desc desc
+    :help-section help-section
     :fn (fn [{:keys [query directive] :as opts} args]
           (exec-command-line-directive name desc ns-sym
                                        func-sym usage opts args))}))
@@ -85,7 +91,7 @@ See README.md for more information on directives."
                    inc)]
     (->> decls
          (map (fn [{:keys [decl desc]}]
-                (let [fmt (str "* %-" space "s %s")]
+                (let [fmt (str " * %-" space "s %s")]
                   (println (format fmt decl desc)))))
          doall)
     space))
@@ -126,10 +132,11 @@ See README.md for more information on directives."
             (conf/print-key-desc space)))}
    (command-line-directive "conn" "connect to a database"
                            'zensols.cisql.interactive 'interactive-directive
-                           "<help|driver [options]>")
+                           nil "connecting-to-a-database")
    {:name "shconn"
     :arg-count 0
     :desc "print the current connection information"
+    :help-section "queries-and-directives"
     :fn (fn [opts _]
           (assert-no-query opts)
           (db/assert-connection)
@@ -138,11 +145,13 @@ See README.md for more information on directives."
                (map #(println (format "* %s: %s" (name (first %)) (second %))))
                doall))}
    (command-line-directive "newdrv" "add a JDBC driver"
-                           'zensols.cisql.spec 'driver-add-command)
+                           'zensols.cisql.spec 'driver-add-command
+                           nil "connecting-to-a-database")
    {:name "removedrv"
     :arg-count 1
     :usage "<driver>"
     :desc "remove a JDBC driver"
+    :help-section "removing-jdbc-drivers"
     :fn (fn [opts [driver-name]]
           (assert-no-query opts)
           (spec/remove-meta driver-name))}
@@ -153,11 +162,14 @@ See README.md for more information on directives."
           (assert-no-query opts)
           (spec/print-drivers))}
    (command-line-directive "purgedrv" "purge custom JDBC driver configuration"
-                           'zensols.cisql.spec 'driver-user-registry-purge-command)
+                           'zensols.cisql.spec
+                           'driver-user-registry-purge-command
+                           nil "connecting-to-a-database")
    {:name "sh"
     :arg-count ".."
     :usage "[variable]"
     :desc "show 'variable', or show them all if not given"
+    :help-section "variables"
     :fn (fn [opts args]
           (assert-no-query opts)
           (let [vkey (and (seq? args) (first args))]
@@ -170,6 +182,7 @@ See README.md for more information on directives."
     :arg-count 1
     :usage "<variable>"
     :desc "delete user variable"
+    :help-section "variables"
     :fn (fn [opts [name]]
           (assert-no-query opts)
           (conf/remove-config (keyword name)))}
@@ -177,6 +190,7 @@ See README.md for more information on directives."
     :arg-count "*"
     :usage "<variable> [value]"
     :desc "set a variable to 'value' or previous query input"
+    :help-section "variables"
     :fn (fn [{:keys [query] :as opts} args]
           (if (= 0 (count args))
             (-> "missing variable to set (try 'help')"
@@ -188,13 +202,15 @@ See README.md for more information on directives."
                               (s/join " " (rest args))
                               query)
                             (#(if (contains? #{"true" "false"} %)
-                                (Boolean/parseBoolean %))))]
+                                (Boolean/parseBoolean %)
+                                %)))]
             (conf/set-config key newval)
             (println (format "%s: %s -> %s" (name key) oldval newval))))}
    {:name "tg"
     :arg-count 1
     :usage "<variable>"
     :desc "toggle a boolean variable"
+    :help-section "variables"
     :fn (fn [opts [key-name]]
           (assert-no-query opts)
           (let [key (keyword key-name)
@@ -206,6 +222,7 @@ See README.md for more information on directives."
    {:name "resetvar"
     :arg-count 0
     :desc "Reset all variables to their nascient state"
+    :help-section "variables"
     :fn (fn [opts [driver-name]]
           (assert-no-query opts)
           (conf/reset))}
@@ -213,6 +230,7 @@ See README.md for more information on directives."
     :arg-count ".."
     :usage "[table]"
     :desc "show table metdata or all if no table given"
+    :help-section "variables"
     :fn (fn [opts args]
           (assert-no-query opts)
           (let [table (and (seq? args) (first args))]
@@ -227,6 +245,7 @@ See README.md for more information on directives."
    {:name "vaporize"
     :arg-count 0
     :desc "reset all configuration including drivers"
+    :help-section "bad-state"
     :fn (fn [opts args]
           (assert-no-query opts)
           (let [table (and (seq? args) (first args))]
@@ -235,23 +254,27 @@ See README.md for more information on directives."
    {:name "orph"
     :arg-count ".."
     :usage "[title]"
-    :desc "orphan the current frame with optional frame title"
+    :desc "orphan the current frame with optional title"
+    :help-section "graphical-results"
     :fn (fn [opts args]
           (assert-no-query opts)
           (let [label (and (seq? args) (first args))]
             (db/orphan-frame label)))}
    (command-line-directive "repl" "start a REPL"
-                           'zensols.cisql.cider-repl 'repl-command)
+                           'zensols.cisql.cider-repl 'repl-command
+                           nil "emacs-integration")
    {:name "export"
     :arg-count 1
     :usage "<csv file>"
     :desc "export the query to a CSV file"
+    :help-section "queries-and-directives"
     :fn (fn [{:keys [query last-query]} [csv-name]]
           (ex/export-query-to-csv query last-query csv-name))}
    {:name "do"
     :arg-count "*"
     :usage "<variable 1> [variable 2]"
     :desc "execute the contents of a variables"
+    :help-section "macros"
     :fn (fn [_ varnames]
           (->> varnames
                (map #(conf/config (keyword %) :expect? true))
@@ -260,6 +283,7 @@ See README.md for more information on directives."
     :arg-count "*"
     :usage "[file] [function]"
     :desc "evaluate a query with a Clojure file"
+    :help-section "evaluation"
     :fn (fn [{:keys [query last-query]} args]
           (let [clj-file (if (> (count args) 0)
                            (first args)
@@ -273,9 +297,26 @@ See README.md for more information on directives."
     :arg-count "*"
     :usage "<clojure code>"
     :desc "evaluate a query with clojure code"
+    :help-section "evaluation"
     :fn (fn [{:keys [query last-query]} code]
           (ex/export-query-to-eval query last-query
                                    (s/join " " code)))}
+   {:name "man"
+    :arg-count 1
+    :usage "<directive|variable name>"
+    :desc "browse the program documentation"
+    :help-section "documentation"
+    :fn (fn [opts [name]]
+          (assert-no-query opts)
+          (let [directive (get (directives-by-name) name)
+                section (or (:help-section directive)
+                            (conf/help-section (keyword name)))
+                url (and section (format man-url-format section))]
+            (if url
+              (do
+                (log/infof "browsing documentation at %s" url)
+                (browse/browse-url url))
+              (println (format "no documentation available for %s" name)))))}
    {:name "ver"
     :arg-count 0
     :desc "print the version of this program"
