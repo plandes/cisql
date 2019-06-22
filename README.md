@@ -248,12 +248,10 @@ configured jdbc:postgresql://puser:pass@localhost:5432/puser
 ### Installing new JDBC Drivers
 
 The tool itself comes with no JDBC drivers.  However it does have JDBC
-*configuration* settings for popular databases and
-are
-[configured in a resource file](https://github.com/plandes/cisql/blob/master/resources/driver.csv) in
-the program.  The system uses the [maven repository](https://mvnrepository.com)
-system and will automatically download and use the new driver without having to
-exit and restart the program.
+*configuration* settings for popular databases and are configured in the
+[driver.csv resource].  The system uses the [maven repository] system and will
+automatically download and use the new driver without having to exit and
+restart the program.
 
 To configure and install a new JDBC driver (in this example to read comma
 delimited CSV files):
@@ -274,6 +272,13 @@ db-access: executing: select count(*) from stat-file
 |----------|
 |       41 |
 ```
+
+Note that you can add multiple maven coordinates separated with a comma and no
+space, which is useful when you need to add license files.  In the case of
+license files that have no maven coordinates, you'll have to install the them
+as maven files yourself directly.  You can do this using the [maven install
+plugin] yourself or use the [install-maven-file](src/install-maven-file) PERL
+script, which provides slightly nicer syntax and help.
 
 
 #### SQLite
@@ -391,3 +396,7 @@ SOFTWARE.
 [ciSQL]: https://github.com/plandes/icsql
 [travis-link]: https://travis-ci.org/plandes/cisql
 [travis-badge]: https://travis-ci.org/plandes/cisql.svg?branch=master
+
+[driver.csv resource]: https://github.com/plandes/cisql/blob/master/resources/driver.csv
+[maven repository]: https://mvnrepository.com
+[maven install plugin]: https://maven.apache.org/guides/mini/guide-3rd-party-jars-local.html
