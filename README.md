@@ -29,6 +29,7 @@ Features include:
     - [Queries and Directives](#queries-and-directives)
     - [Variables](#variables)
     - [Graphical Results](#graphical-results)
+    - [Evaluation](#evaluation)
 - [Database Access](#database-access)
     - [Connecting to a Database](#connecting-to-a-database)
     - [Installing new JDBC Drivers](#installing-new-jdbc-drivers)
