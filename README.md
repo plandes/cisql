@@ -115,8 +115,11 @@ The program keeps track of variables across sessions, which is persisted in
 using the Java persistence framework.  You can set a variable with the `set`
 directive.  For example, to set the prompt:
 ```sql
-set prompt C:/>
+set prompt 'darkstar$ '
 ```
+
+**Important**: To add white space you can use quote (single quote `'`) for
+verbatim values.
 
 Certain variables are booleans like `gui`, which tells the program to show
 results in a GUI frame.  These variables should be toggled with the `tg`
