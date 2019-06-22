@@ -22,7 +22,8 @@ Features include:
 * Configuration via command line [persistent variables](#variables) to controls
   GUI interface, logging, etc.
 * Distribution is a [stand alone Java jar file] with all dependencies.
-
+* Data base [meta data](#database-meta-data) access as results and to Clojure
+  programs.
 
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
 ## Table of Contents
