@@ -163,8 +163,8 @@ The special variable `strict` controls whether only built in variables can be
 set and be default is off to disallow user variables.  This is to void
 misspelling variables that are often modified.
 
-When you turn this off (use `tg strict`), user variables can be added using the
-`set` and `tg` directives.
+When you turn this off (use `set strict false`), user variables can be added
+using the `set` and `tg` directives.
 
 User defined variables can be unset/removed with the `rm` directive.
 
@@ -194,6 +194,9 @@ By default each query replaces the results of the last.  However, you can
 create multiple windows to compare results by using the `orph` directive.  This
 *orphans* the window from any further result reporting.  The directive takes a
 `label` argument, which is used in the frame title.
+
+When the variable `guiwin` is set to `true` then a separate application window
+starts when results are available for graphical display.
 
 
 ### Database Meta Data
@@ -228,6 +231,9 @@ function takes the following parameters:
 The `load` directive takes two optional arguments: the file to load and
 function to call in the file.  The file defaults to `cisql.clj` and the
 function to call defaults to the last function in the evaluated file.
+
+Direct access to a running SQL prompt with an [Emacs Cider
+session](#emacs-integration) is also available.
 
 
 #### Loading a File
@@ -461,6 +467,11 @@ The last command creates a new `.csv` spreadsheet file shown below:
 If you're an Emacs user, the [ciSQL] library is available, which integrates
 with the [Emacs SQL system](#https://www.emacswiki.org/emacs/SqlMode).
 
+In addition, you can start a [Cider] REPL using the `repl` directive while the
+program is running and evaluating SQL statements and directives.  This provides
+an even deeper way of integrating data base access with Clojure.  See the
+[evaluation](#evaluation) section for other ways of integration.
+
 
 ## Documentation
 
@@ -507,3 +518,4 @@ SOFTWARE.
 [maven repository]: https://mvnrepository.com
 [maven install plugin]: https://maven.apache.org/guides/mini/guide-3rd-party-jars-local.html
 [stand alone Java jar file]: https://github.com/plandes/cisql/releases/latest
+[Cider]: https://github.com/clojure-emacs/cider

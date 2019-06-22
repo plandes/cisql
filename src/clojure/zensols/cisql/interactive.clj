@@ -71,9 +71,9 @@ downloads the JDBC drivers."
             (let [dbspec (if name (create-db-spec opts))]
               (and config (configure config))
               (conf/print-help)
-              (if dbspec
-                (log/infof "connecting to %s..." (:subname dbspec)))
               (log/debugf "dbspec: %s" dbspec)
-              (if dbspec (db/set-db-spec dbspec))
+              (when dbspec
+                (log/infof "connecting to %s..." name)
+                (db/set-db-spec dbspec))
               (log/debugf "setting db spec: %s" (pr-str dbspec))
               (query/start-event-loop))))})

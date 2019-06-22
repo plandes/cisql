@@ -93,6 +93,9 @@ print and display result sets."
                     "")
                   (or (second (re-find #"jdbc:.*?://?(.*?)$" url)) url)))))
 
+(defn dbspec-meta-data []
+  (dissoc @dbspec :factory))
+
 (defn connected? []
   (not (nil? @dbspec)))
 

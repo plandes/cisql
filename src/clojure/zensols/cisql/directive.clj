@@ -7,6 +7,7 @@ See README.md for more information on directives."
             [clojure.string :as s]
             [zensols.actioncli.log4j2 :as lu]
             [zensols.actioncli.parse :as parse]
+            [zensols.cisql.version :as ver]
             [zensols.cisql.conf :as conf]
             [zensols.cisql.read :as r]
             [zensols.cisql.spec :as spec]
@@ -52,10 +53,11 @@ See README.md for more information on directives."
                (format "usage: %s%s" name)
                println)
           (println (parse/help-message :usage false)))
-        (let [res (parse/process-arguments ctx args)]
+        (do
           (assert-no-query opts)
-          (if res
-            (println "configured" (:connection-uri res))))))))
+          (let [res (parse/process-arguments ctx args)]
+            (if res
+              (println "configured" (:connection-uri res)))))))))
 
 (defn- command-line-directive
   ([name desc ns-sym func-sym]
@@ -76,17 +78,25 @@ See README.md for more information on directives."
                             {:decl (str name " " usage)
                              :desc desc})))
                    (remove nil?))
-        space (->> decls (map #(-> % :decl count)) (reduce max) (max 0) (+ 2))]
+        space (->> decls
+                   (map #(-> % :decl count))
+                   (reduce max)
+                   (max 0)
+                   inc)]
     (->> decls
          (map (fn [{:keys [decl desc]}]
-                (let [fmt (str "%-" space "s %s")]
+                (let [fmt (str "* %-" space "s %s")]
                   (println (format fmt decl desc)))))
-         doall)))
+         doall)
+    space))
 
-(defn init-grammer []
-  (r/set-grammer (conf/config :linesep)
-                 (->> (directives)
-                      (map #(select-keys % [:name :arg-count])))))
+(defn init-grammer
+  ([]
+   (init-grammer (conf/config :linesep)))
+  ([val]
+   (r/set-grammer val
+                  (->> (directives)
+                       (map #(select-keys % [:name :arg-count]))))))
 
 (defn- set-log-level [key value]
   (when (= key :loglevel)
@@ -98,19 +108,36 @@ See README.md for more information on directives."
 
 (conf/add-set-config-hook set-log-level)
 
+(defn- update-linesep-variable [key val]
+  ;; end of query terminator has changed so reinitialize grammer
+  (if (= :linesep key)
+    (init-grammer val)))
+
+(conf/add-set-config-hook update-linesep-variable)
+
 (defn- directives []
   [{:name "help"
     :arg-count 0
     :fn (fn [& _]
-          (println "commands:")
-          (print-command-help)
-          (println)
-          (println "variables:")
-          (conf/print-key-desc))}
-   (command-line-directive "conn" "connect to a database (try 'help')"
+          (println "# Commands:")
+          (let [space (print-command-help)]
+            (println)
+            (println "# Variables:")
+            (conf/print-key-desc space)))}
+   (command-line-directive "conn" "connect to a database"
                            'zensols.cisql.interactive 'interactive-directive
                            "<help|driver [options]>")
-   (command-line-directive "newdrv" "add a JDBC driver (try 'help')"
+   {:name "shconn"
+    :arg-count 0
+    :desc "print the current connection information"
+    :fn (fn [opts _]
+          (assert-no-query opts)
+          (db/assert-connection)
+          (println "# Connection")
+          (->> (db/dbspec-meta-data)
+               (map #(println (format "* %s: %s" (name (first %)) (second %))))
+               doall))}
+   (command-line-directive "newdrv" "add a JDBC driver"
                            'zensols.cisql.spec 'driver-add-command)
    {:name "removedrv"
     :arg-count 1
@@ -119,17 +146,14 @@ See README.md for more information on directives."
     :fn (fn [opts [driver-name]]
           (assert-no-query opts)
           (spec/remove-meta driver-name))}
-   (command-line-directive "purgedrv" "purge custom JDBC driver configuration"
-                           'zensols.cisql.spec 'driver-user-registry-purge-command
-                           nil)
    {:name "listdrv"
     :arg-count 0
     :desc "list all registered JDBC drivers"
     :fn (fn [opts args]
           (assert-no-query opts)
           (spec/print-drivers))}
-   (command-line-directive "repl" "start a REPL"
-                           'zensols.cisql.cider-repl 'repl-command)
+   (command-line-directive "purgedrv" "purge custom JDBC driver configuration"
+                           'zensols.cisql.spec 'driver-user-registry-purge-command)
    {:name "sh"
     :arg-count ".."
     :usage "[variable]"
@@ -152,27 +176,21 @@ See README.md for more information on directives."
    {:name "set"
     :arg-count "*"
     :usage "<variable> [value]"
-    :desc "set a variable, if 'value' is not given, then take it from the previous query input"
+    :desc "set a variable to 'value' or previous query input"
     :fn (fn [{:keys [query] :as opts} args]
           (if (= 0 (count args))
-            (throw (ex-info "missing variable to set (try 'help')"
-                            {:query query :opts opts})))
+            (-> "missing variable to set (try 'help')"
+                (ex-info {:query query :opts opts})
+                throw))
           (let [key (keyword (first args))
                 oldval (conf/config key)
-                newval (if (> (count args) 1)
-                         (s/join " " (rest args))
-                         query)]
+                newval (->> (if (> (count args) 1)
+                              (s/join " " (rest args))
+                              query)
+                            (#(if (contains? #{"true" "false"} %)
+                                (Boolean/parseBoolean %))))]
             (conf/set-config key newval)
-            ;; end of query terminator has changed so reinitialize grammer
-            (if (= :linesep key)
-              (init-grammer))
             (println (format "%s: %s -> %s" (name key) oldval newval))))}
-   {:name "resetvar"
-    :arg-count 0
-    :desc "Reset all variables to their nascient state"
-    :fn (fn [opts [driver-name]]
-          (assert-no-query opts)
-          (conf/reset))}
    {:name "tg"
     :arg-count 1
     :usage "<variable>"
@@ -185,6 +203,12 @@ See README.md for more information on directives."
             (conf/set-config key nextval)
             (println (format "%s: %s -> %s"
                              key-name oldval nextval))))}
+   {:name "resetvar"
+    :arg-count 0
+    :desc "Reset all variables to their nascient state"
+    :fn (fn [opts [driver-name]]
+          (assert-no-query opts)
+          (conf/reset))}
    {:name "shtab"
     :arg-count ".."
     :usage "[table]"
@@ -193,22 +217,6 @@ See README.md for more information on directives."
           (assert-no-query opts)
           (let [table (and (seq? args) (first args))]
             (db/show-table-metadata table)))}
-   {:name "vaporize"
-    :arg-count 0
-    :desc "reset all configuration including drivers (careful!)"
-    :fn (fn [opts args]
-          (assert-no-query opts)
-          (let [table (and (seq? args) (first args))]
-            (pref/clear)
-            (conf/reset)))}
-   {:name "orph"
-    :arg-count ".."
-    :usage "[label]"
-    :desc "orphan the current frame optionally giving it a label"
-    :fn (fn [opts args]
-          (assert-no-query opts)
-          (let [label (and (seq? args) (first args))]
-            (db/orphan-frame label)))}
    {:name "cat"
     :arg-count 1
     :usage "<catalog>"
@@ -216,15 +224,33 @@ See README.md for more information on directives."
     :fn (fn [opts [cat-name]]
           (assert-no-query opts)
           (db/set-catalog cat-name))}
+   {:name "vaporize"
+    :arg-count 0
+    :desc "reset all configuration including drivers"
+    :fn (fn [opts args]
+          (assert-no-query opts)
+          (let [table (and (seq? args) (first args))]
+            (pref/clear)
+            (conf/reset)))}
+   {:name "orph"
+    :arg-count ".."
+    :usage "[title]"
+    :desc "orphan the current frame with optional frame title"
+    :fn (fn [opts args]
+          (assert-no-query opts)
+          (let [label (and (seq? args) (first args))]
+            (db/orphan-frame label)))}
+   (command-line-directive "repl" "start a REPL"
+                           'zensols.cisql.cider-repl 'repl-command)
    {:name "export"
     :arg-count 1
     :usage "<csv file>"
-    :desc "export the the query on the previous line (no delimiter ';')) to a CSV file"
+    :desc "export the query to a CSV file"
     :fn (fn [{:keys [query last-query]} [csv-name]]
           (ex/export-query-to-csv query last-query csv-name))}
    {:name "do"
     :arg-count "*"
-    :usage "<variable name 1> [variable name 2]"
+    :usage "<variable 1> [variable 2]"
     :desc "execute the contents of a variables"
     :fn (fn [_ varnames]
           (->> varnames
@@ -232,8 +258,8 @@ See README.md for more information on directives."
                (array-map :eval )))}
    {:name "load"
     :arg-count "*"
-    :usage "[clojure file] [function-name]"
-    :desc "evaluate a query with a function (defaults to last) a clojure file (default to cisql.clj)"
+    :usage "[file] [function]"
+    :desc "evaluate a query with a Clojure file"
     :fn (fn [{:keys [query last-query]} args]
           (let [clj-file (if (> (count args) 0)
                            (first args)
@@ -249,4 +275,9 @@ See README.md for more information on directives."
     :desc "evaluate a query with clojure code"
     :fn (fn [{:keys [query last-query]} code]
           (ex/export-query-to-eval query last-query
-                                   (s/join " " code)))}])
+                                   (s/join " " code)))}
+   {:name "ver"
+    :arg-count 0
+    :desc "print the version of this program"
+    :fn (fn [& _]
+          (println (format "v%s (%s)" ver/version ver/gitref)))}])

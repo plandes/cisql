@@ -9,15 +9,15 @@ system."
             [zensols.cisql.pref :as pref]))
 
 (def ^:private var-meta
-  [[:gui false "use a graphical window to display result sets"]
-   [:guinotrey true "use a separate application entry for GUI results (require restart)"]
+  [[:strict true "if true, do not allow setting of free variables"]
    [:linesep ";" "tell where to end a query and then send"]
-   [:loglevel "info" "the logging verbosity (<error|warn|info|debug|trace>)"]
+   [:loglevel "info" "logging verbosity (<error|warn|info|debug|trace>)"]
    [:errorlong false "if true, provide more SQL level error information"]
    [:prex false "print exception stack traces"]
    [:prompt " %1$s > " "a format string for the promp"]
-   [:sigintercept true "if true, intercept signals like Control-C during queries"]
-   [:strict true "if true, do not allow setting of free variables"]
+   [:sigintercept true "if true, intercept and break on Control-C signals"]
+   [:gui false "use a graphical window to display result sets"]
+   [:guiwin true "use separate window for GUI (require restart)"]
    [:end-directive "exit" "string used to exit the program"]
    [:help-directive "help" "string used to print help"]])
 
@@ -117,23 +117,25 @@ system."
 (defn print-key-values []
   (let [conf (config)]
     (letfn [(pr-conf [key]
-              (println (format "  %s: %s "(name key) (get conf key))))]
-      (println "built in variables:")
+              (println (format "* %s: %s "(name key) (get conf key))))]
+      (println "# Built in variables:")
       (->> (map first var-meta)
            (map pr-conf)
            doall)
-      (println "user variables:")
+      (println "# User variables:")
       (->> (user-variable-names)
            (map pr-conf)
            doall))))
 
-(defn print-key-desc []
-  (let [space (->> (map first var-meta)
+(defn print-key-desc [space]
+  (let [space (or space 0)
+        space (->> (map first var-meta)
                    (map #(-> % name count))
                    (reduce max)
                    (max 0)
-                   (+ 2))
-        fmt (str "%-" space "s %s")]
+                   inc
+                   (max space))
+        fmt (str "* %-" space "s %s")]
     (->> var-meta
          (map (fn [[k d v]]
                 (println (format fmt (str (name k)) v))))
