@@ -1,4 +1,6 @@
-(ns ^{:doc "Default installed directives."
+(ns ^{:doc "Default installed directives.
+
+See README.md for more information on directives."
       :author "Paul Landes"}
     zensols.cisql.directive
   (:require [clojure.tools.logging :as log]
@@ -14,6 +16,15 @@
             [zensols.cisql.cider-repl :as repl]))
 
 (declare directives)
+
+(defn directives-by-name
+  "Return a map of the directives using their names as keys.
+
+See README.md for more information on directives."
+  []
+  (let [dirs (directives)]
+   (zipmap (map :name (directives))
+           (map #(dissoc % :name) dirs))))
 
 (defn- assert-no-query
   "Throw an exception if there's a current query that exists."
@@ -77,11 +88,6 @@
                  (->> (directives)
                       (map #(select-keys % [:name :arg-count])))))
 
-(defn directives-by-name []
-  (let [dirs (directives)]
-   (zipmap (map :name (directives))
-           (map #(dissoc % :name) dirs))))
-
 (defn- set-log-level [key value]
   (when (= key :loglevel)
     (if (nil? value)
@@ -132,7 +138,7 @@
           (assert-no-query opts)
           (let [vkey (and (seq? args) (first args))]
             (if vkey
-              (->> (conf/config (keyword vkey))
+              (->> (conf/config (keyword vkey) :expect? true)
                    (format "%s: %s" vkey)
                    println)
               (conf/print-key-values))))}
@@ -216,6 +222,14 @@
     :desc "export the the query on the previous line (no delimiter ';')) to a CSV file"
     :fn (fn [{:keys [query last-query]} [csv-name]]
           (ex/export-query-to-csv query last-query csv-name))}
+   {:name "do"
+    :arg-count "*"
+    :usage "<variable name 1> [variable name 2]"
+    :desc "execute the contents of a variables"
+    :fn (fn [_ varnames]
+          (->> varnames
+               (map #(conf/config (keyword %) :expect? true))
+               (array-map :eval )))}
    {:name "load"
     :arg-count "*"
     :usage "[clojure file] [function-name]"

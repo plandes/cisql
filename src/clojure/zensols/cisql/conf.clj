@@ -67,11 +67,17 @@ system."
 
 (defn config
   ([]
-   (config-data))
-  ([key]
+   (config nil))
+  ([key & {:keys [expect?]
+           :or {expect? nil}}]
    (if (nil? key)
      (config-data)
-     (get (config-data) key))))
+     (let [val (get (config-data) key)]
+       (if (and (nil? val) expect?)
+         (-> (format "no such variable: %s" (name key))
+             (ex-info {:key key})
+             throw))
+       val))))
 
 (defn set-config [key value]
   (log/tracef "%s -> %s" key value)

@@ -4,21 +4,24 @@
 
 This program provides a command line interface to interacting with relational
 database managements systems (RDMBs) and currently includes SQLite, MySQL and
-PostgreSQL out of the box.  Additional JDBC drivers can easily be added in a
-(somewhat incomplete) plugin system.
+PostgreSQL out of the box.  Additional JDBC drivers can easily be added on the
+command line.
 
 Features include:
 
-* Multiple GUI tabulation frames for query results.
-* Use any JDBC driver to connect almost any database.
-* Evaluate Clojure code as input directly SQL queries with JVM in memory
-  objects that come directly from the `java.sql.ResultSet`.
-* JDBC drivers are configured in the command event loop application and
-  downloaded and integrated without having to restart.
-* Persist result sets as a `.csv` file.
+* Multiple [GUI tabulation](#graphical-results) frames for query results.
+* Use any [JDBC driver](#database-access) to connect almost any database.
+* [Evaluate](#evaluation) of Clojure code as input directly SQL queries with JVM
+  in memory objects that come directly from the `java.sql.ResultSet`.
+* [Macros](#macros) that save you typing commands and queries over and over.
+* JDBC drivers are [configured](#installing-new-jdbc-drivers) in the command
+  event loop application and downloaded and integrated without having to
+  restart.
+* [Export](#queries-and-directives) result sets as a `.csv` file.
 * Emacs interaction with the [ciSQL] library.
-* Primitive variable setting (controls GUI interface, logging, etc).
-* Distribution is a one Java Jar file with all dependencies.
+* Configuration via command line [persistent variables](#variables) to controls
+  GUI interface, logging, etc.
+* Distribution is a [stand alone Java jar file] with all dependencies.
 
 
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
@@ -29,10 +32,15 @@ Features include:
     - [Online Help](#online-help)
     - [Queries and Directives](#queries-and-directives)
     - [Variables](#variables)
+        - [Boolean Variables](#boolean-variables)
+        - [Built-in and User Variables](#built-in-and-user-variables)
+    - [Macros](#macros)
     - [Graphical Results](#graphical-results)
+    - [Database Meta Data](#database-meta-data)
     - [Evaluation](#evaluation)
         - [Loading a File](#loading-a-file)
         - [Evaluation Directive](#evaluation-directive)
+        - [Program API Access](#program-api-access)
     - [Bad State](#bad-state)
 - [Database Access](#database-access)
     - [Connecting to a Database](#connecting-to-a-database)
@@ -50,8 +58,7 @@ Features include:
 
 ## Obtaining
 
-The latest release binaries are
-available [here](https://github.com/plandes/cisql/releases/latest).
+The latest release binaries are available as a [stand alone Java jar file].
 
 
 ## Usage
@@ -132,12 +139,48 @@ set prompt 'darkstar %1$s> '
 **Important**: To add white space you can use quote (single quote `'`) for
 verbatim values.
 
+
+#### Boolean Variables
+
 Certain variables are booleans like `gui`, which tells the program to show
 results in a GUI frame.  These variables should be toggled with the `tg`
 directive.
 
 To list all variables, use the `sh` directive, which also takes a variable name
 as a parameter if you want to see just one.
+
+
+#### Built-in and User Variables
+
+There are two kinds of variables:
+
+* built ins: these are variables that come predefined and control the behavior
+  of the program
+* user: these are variables the user can add.
+
+The special variable `strict` controls whether only built in variables can be
+set and be default is off to disallow user variables.  This is to void
+misspelling variables that are often modified.
+
+When you turn this off (use `tg strict`), user variables can be added using the
+`set` and `tg` directives.
+
+User defined variables can be unset/removed with the `rm` directive.
+
+
+### Macros
+
+A crude macro system is available with the `do` directive, which takes a list
+of [user variable](#built-in-and-user-variables) names as input.  For each
+variable name given, it invokes the contents of the value of the variable as if
+it were given on the command line.  For example:
+```sql
+set sela 'select * from annotations limit 5;'
+set selc 'select * from coders;'
+set con 'conn sqlite -d annotated-corpus.db'
+do con sela selc
+```
+First connects to an SQLite database, and executes two `select` statements.
 
 
 ### Graphical Results
@@ -152,22 +195,44 @@ create multiple windows to compare results by using the `orph` directive.  This
 `label` argument, which is used in the frame title.
 
 
+### Database Meta Data
+
+The `shtab` displays all table meta data in the database or the meta data for a
+table if the table name is given.  However, meta data is also available to
+directives that take SQL result set output by using a special syntax:
+```sql
+select from @@metadata;
+```
+
+A table is specified before the `metadata` keyword to get a table meta data
+result set.:
+```sql
+select from @@some_table.metadata
+```
+
+
 ### Evaluation
 
 You can "pipe" the results of queries to your own custom Clojure code.  The
 easiest way to do this is using the `eval` directive as demonstrated in the
-[queries and directives](#queries-and-directives) section.  In addition, the
-`load` directive reads a Clojure file and uses the defined function to process
-the query results.  Like the `eval` directive, this function takes the
-following parameters:
+[queries and directives](#queries-and-directives) section.
+
+In addition, the `load` directive reads a Clojure file and uses the defined
+function to process the query results.  Like the `eval` directive, this
+function takes the following parameters:
 * **rows**: a lazy sequence of maps, each map is a key/value set of column
   name to value.
 * **header**: a list of string column names.
 
+The `load` directive takes two optional arguments: the file to load and
+function to call in the file.  The file defaults to `cisql.clj` and the
+function to call defaults to the last function in the evaluated file.
+
 
 #### Loading a File
 
-This example adds the string `Mrs` to each row for the `coder` column:
+This example adds the string `Mrs` to each row for the `coder` column (say this
+is in a file called `fix-columns.clj`:
 ```clojure
 (ns temporary
   (:require [clojure.tools.logging :as log]))
@@ -182,6 +247,12 @@ This example adds the string `Mrs` to each row for the `coder` column:
         (array-map :display))))
 ```
 
+To run from the program, invoke:
+```sql
+select * from coders;
+load fix-columns.clj
+```
+
 The following happens based on the output of this function:
 * **nil**: nothing happens
 * **a map with a :display key**: the `:header` and `:rows:` keys are used to
@@ -191,9 +262,6 @@ The following happens based on the output of this function:
 Observe that you can write your functions to `printlin` anything just like any
 Clojure program and the output goes to the interactive window.
 
-**Important**: The function to evaluate must be the last symbolic expression in
-the file.
-
 
 #### Evaluation Directive
 
@@ -201,6 +269,36 @@ Another more comprehensive example, which renames the `firstName` column to `nam
 
 ```clojure
 eval (fn [r h] {:display {:header ["name"] :rows (map #(array-map "name" (get % "firstName")) r)}})
+```
+
+
+#### Program API Access
+
+Note that you also have access to the program API.  For example, to access the
+variables, use the `zensols.cisql.conf` name space.  This example uses sets and
+prints a variable with the names of columns and added to file `table-meta.clj`:
+```clojure
+(ns some-ns
+  (:require [clojure.tools.logging :as log]
+            [zensols.cisql.conf :as conf]))
+
+(defn- set-table-names [rows _]
+  (->> rows
+       (map #(get % "TABLE_NAME"))
+       vec
+       (conf/set-config :table-names))
+  "set table-names variable")
+
+(defn- read-table-names [$ _]
+  (format "%d tables" (count (conf/config :table-names))))
+```
+
+To run:
+```sql
+select from @@metadata;
+load table-meta.clj set-table-names
+sh table-names
+load table-meta.clj read-table-names
 ```
 
 
@@ -407,3 +505,4 @@ SOFTWARE.
 
 [maven repository]: https://mvnrepository.com
 [maven install plugin]: https://maven.apache.org/guides/mini/guide-3rd-party-jars-local.html
+[stand alone Java jar file]: https://github.com/plandes/cisql/releases/latest

@@ -23,45 +23,59 @@
     (with-exception
       (apply handle-fn query-data args))))
 
+(defn- process-query
+  "Process the query data, which is a query or directive processing."
+  [dir-fn query-data directive directives]
+  (cond dir-fn
+        (invoke dir-fn query-data)
+        (map? directive)
+        (let [{:keys [name args]} directive
+              {:keys [fn]} (get directives (clojure.core/name name))]
+          (log/tracef "name %s -> fn %s (%s)" name fn directive)
+          (if-not fn
+            (-> (pr-str directive)
+                (#(format "no function defined for directive %s: %s"
+                          name %))
+                (ex-info {:directive directive
+                          :query-data query-data})
+                throw))
+          (let [context (assoc query-data :last-query @last-query)]
+            (log/debugf "context: <%s>" (pr-str context))
+            (invoke fn context args)))
+        true
+        (-> (str "don't know what to do with query data: "
+                 (pr-str query-data))
+            (ex-info {:query-data query-data})
+            throw)))
+
 (defn process-queries
   "Process a line of user input and use callback functions **dir-fns**, which
   is a map of functions that are called by key based on the following actions:
 
-* **:end-query** called when the user is completed her input and wants to send
+  * **:end-query** called when the user is completed her input and wants to send
   it to be processed
-* **:end-session** the user has given the exit command
-* **:end-file** the user has hit the end of file sequence (CTRL-D)"
-  [dir-fns]
-  (loop [query-data (r/read-query)]
-    (log/tracef "query data: %s" query-data)
-    (log/debugf "query: <%s>" (:query query-data))
-    (let [{:keys [directive]} query-data
-          dir-fn (get dir-fns directive)
-          directives (di/directives-by-name)]
-      (log/tracef "directive: %s" directive)
-      (cond dir-fn
-            (invoke dir-fn query-data)
-            (map? directive)
-            (let [{:keys [name args]} directive
-                  {:keys [fn]} (get directives (clojure.core/name name))]
-              (log/tracef "name %s -> fn %s (%s)" name fn directive)
-              (if-not fn
-                (-> (pr-str directive)
-                    (#(format "no function defined for directive %s: %s"
-                              name %))
-                    (ex-info {:directive directive
-                              :query-data query-data})
-                    throw))
-              (let [context (assoc query-data :last-query @last-query)]
-                (log/debugf "context: <%s>" (pr-str context))
-                (invoke fn context args)))
-            true
-            (-> (str "don't know what to do with query data: "
-                     (pr-str query-data))
-                (ex-info {:query-data query-data})
-                throw))
-      (when (= :end-of-query directive)
-        (recur (r/read-query))))))
+  * **:end-session** the user has given the exit command
+  * **:end-file** the user has hit the end of file sequence (CTRL-D)"
+  ([dir-fns]
+   (process-queries dir-fns nil nil))
+  ([dir-fns query-data one-shot?]
+   (log/debugf "entry query-data: %s" query-data)
+   (loop [query-data (or query-data (r/read-query))]
+     (log/debugf "query data: %s" query-data)
+     (let [{:keys [directive]} query-data
+           dir-fn (get dir-fns directive)
+           directives (di/directives-by-name)]
+       (log/tracef "directive: %s" directive)
+       (let [res (process-query dir-fn query-data directive directives)]
+         (if (and (map? res) (contains? res :eval))
+           (doseq [user-input (:eval res)]
+             (log/debugf "do processing: %s" user-input)
+             (let [new-res (process-queries dir-fns (r/read-query user-input) true)]
+               (log/debugf "do processed eval: %s -> %s" user-input res)))))
+       (when (and (not one-shot?) (= :end-of-query directive))
+         (log/debug "while read")
+         (recur (r/read-query)))))
+   (log/debugf "leave query-data: %s" query-data)))
 
 (defn- init-thread-exception-handler
   "Configure a default exception handler so we swallow exceptions in forked

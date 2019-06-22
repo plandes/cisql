@@ -70,31 +70,33 @@
 
 (defn read-query
   "Read a query and process it."
-  []
-  (let [query (StringBuilder.)
-        line-no (atom 1)
-        directive (atom nil)]
-    (letfn [(reset []
-              (reset! line-no 0))
-            (end [dir]
-              (log/debugf "query: %s" query)
-              (reset! line-no line-limit)
-              (reset! directive dir))]
-     (while (<= @line-no line-limit)
-       (log/tracef "lines no: %d" @line-no)
-       (let [prompt (try 
-                      (format (conf/config :prompt) @line-no)
-                      (catch Exception e
-                        (format "<bad prompt: %s> " e)))]
-         (print prompt))
-       (flush)
-       (let [user-input (.readLine *std-in*)]
-         (log/debugf "line: %s" user-input)
-         (cond (nil? user-input) (end :end-of-session)
-               (-> user-input s/trim empty?) (.append query \newline)
-               true (process-input end reset query user-input)))
-       (swap! line-no inc)))
-    (let [query-str (s/trim (.toString query))
-          query (if-not (empty? query-str) query-str)]
-      (merge (if query {:query query})
-             {:directive @directive}))))
+  ([]
+   (read-query nil))
+  ([user-input]
+   (let [query (StringBuilder.)
+         line-no (atom 1)
+         directive (atom nil)]
+     (letfn [(reset []
+               (reset! line-no 0))
+             (end [dir]
+               (log/debugf "query: %s" query)
+               (reset! line-no line-limit)
+               (reset! directive dir))]
+       (while (<= @line-no line-limit)
+         (log/tracef "lines no: %d" @line-no)
+         (let [prompt (try 
+                        (format (conf/config :prompt) @line-no)
+                        (catch Exception e
+                          (format "<bad prompt: %s> " e)))]
+           (print prompt))
+         (flush)
+         (let [user-input (or user-input (.readLine *std-in*))]
+           (log/debugf "line: %s" user-input)
+           (cond (nil? user-input) (end :end-of-session)
+                 (-> user-input s/trim empty?) (.append query \newline)
+                 true (process-input end reset query user-input)))
+         (swap! line-no inc)))
+     (let [query-str (s/trim (.toString query))
+           query (if-not (empty? query-str) query-str)]
+       (merge (if query {:query query})
+              {:directive @directive})))))
