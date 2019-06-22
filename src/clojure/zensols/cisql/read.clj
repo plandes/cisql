@@ -82,7 +82,11 @@
               (reset! directive dir))]
      (while (<= @line-no line-limit)
        (log/tracef "lines no: %d" @line-no)
-       (print (format (conf/config :prompt) @line-no))
+       (let [prompt (try 
+                      (format (conf/config :prompt) @line-no)
+                      (catch Exception e
+                        (format "<bad prompt: %s> " e)))]
+         (print prompt))
        (flush)
        (let [user-input (.readLine *std-in*)]
          (log/debugf "line: %s" user-input)
