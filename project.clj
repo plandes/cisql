@@ -23,14 +23,13 @@
                  [org.clojure/java.jdbc "0.6.1"]
 
                  ;; db drivers
-                 [org.clojure/data.csv "0.1.2"]
+                 [org.clojure/data.csv "0.1.4"]
 
                  ;; driver dep download
                  [com.cemerick/pomegranate "0.3.1"]
 
                  ;; gui
-                 [com.zensols.gui/tabres "0.0.6"]
-                 [com.zensols.gui/pref "0.0.2" :exclusions [commons-logging]]
+                 [com.zensols.gui/tabres "0.0.10"]
 
                  ;; mnemonic DSL
                  [instaparse "1.4.5"]

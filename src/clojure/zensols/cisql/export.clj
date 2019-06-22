@@ -1,12 +1,11 @@
 (ns ^{:doc "This library contains functions that allow for exporting of table data.
 
-This includes functions to export to CSV files and "
+This includes functions to export to CSV files and adhoc Clojure functions."
       :author "Paul Landes"}
     zensols.cisql.export
     (:require [clojure.tools.logging :as log]
               [clojure.java.io :as io]
               [clojure.data.csv :as csv]
-              [clojure.pprint :refer (pprint print-table)]
               [zensols.tabres.display-results :as dis]
               [zensols.cisql.conf :as conf]
               [zensols.cisql.db-access :as db]))
@@ -14,7 +13,7 @@ This includes functions to export to CSV files and "
 (defn- export-table-csv
   "Execute **query** and save as an CSV file to **filename**."
   [query filename]
-  (letfn [(rs-handler [rs]
+  (letfn [(rs-handler [rs _]
             (let [rs-data (db/result-set-to-array rs)
                   csv (map (fn [row]
                              (map #(get row %) (:header rs-data)))
@@ -48,25 +47,13 @@ This includes functions to export to CSV files and "
   (-> (narrow-query query last-query)
       (export-table-csv csv-name)))
 
-(defn- display-results
-  "Display results either in text or as a graphical swing table.
-  
-  See [[zensols.cisql.db-access/display-result-set]]."
-  [data header title]
-  (if (conf/config :gui)
-    (let [data (->> data
-                    (map (fn [row]
-                           (map #(get row %) header))))]
-      (dis/display-results data :column-names header :title title))
-    (print-table header data)))
-
 (defn export-query-to-function
   "Export result set output to a the last defined Clojure function in a file."
   [query last-query clj-file]
   (let [handler-fn (load-file clj-file)
         title (name (:name (meta handler-fn)))
         res-inst (atom nil)]
-    (letfn [(rs-handler [rs]
+    (letfn [(rs-handler [rs _]
               (let [rs-data (db/result-set-to-array rs :make-string? false)
                     {:keys [header rows]} rs-data]
                 (reset! res-inst (handler-fn rows header))
@@ -76,7 +63,7 @@ This includes functions to export to CSV files and "
       (let [res @res-inst
             {:keys [display]} res]
         (if display
-          (display-results (:rows display) (:header display) title)
+          (db/display-results (:rows display) (:header display) title)
           (if res
             (println res)))))))
 
@@ -85,7 +72,7 @@ This includes functions to export to CSV files and "
   (let [handler-fn (eval (read-string code))
         title "eval"
         res-inst (atom nil)]
-    (letfn [(rs-handler [rs]
+    (letfn [(rs-handler [rs _]
               (let [rs-data (db/result-set-to-array rs :make-string? false)
                     {:keys [header rows]} rs-data]
                 (reset! res-inst (handler-fn rows header))
@@ -95,6 +82,6 @@ This includes functions to export to CSV files and "
       (let [res @res-inst
             {:keys [display]} res]
         (if display
-          (display-results (:rows display) (:header display) title)
+          (db/display-results (:rows display) (:header display) title)
           (if res
             (println res)))))))
