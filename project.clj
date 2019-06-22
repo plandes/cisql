@@ -51,10 +51,7 @@
                                     ([:mainClass "zensols.cisql.core"]
                                      [:id "cisql"])]]
                                   [:environmentSetupFileName "setupenv"])}]]
-  :profiles {:1.9 {:dependencies [[org.clojure/clojure "1.9.0"]]}
-             :1.10 {:dependencies [[org.clojure/clojure "1.10.0"]]}
-             :uberjar {:aot :all}
-             ;:uberjar {:aot [zensols.cisql.core]}
+  :profiles {:uberjar {:aot :all}
              :appassem {:aot :all}
              :snapshot {:git-version {:version-cmd "echo -snapshot"}}
              :test

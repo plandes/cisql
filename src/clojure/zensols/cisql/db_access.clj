@@ -228,75 +228,74 @@ Return a map with entries:
 
 (defn- table-metadata
   "Display the meta data of **table**, which includes column names and metadata."
-  [table]
-  (jdbc/with-db-connection [db @dbspec]
-    (let [conn (resolve-connection db)
-          dbmeta (.getMetaData conn)
-          rs (if table
-               (.getColumns dbmeta nil nil table "%")
-               (.getTables dbmeta nil nil "%" nil))
-          meta (.getMetaData rs)]
-      rs meta)))
+  [table db]
+  (let [conn (resolve-connection db)
+        dbmeta (.getMetaData conn)
+        rs (if table
+             (.getColumns dbmeta nil nil table "%")
+             (.getTables dbmeta nil nil "%" nil))
+        meta (.getMetaData rs)]
+    [rs meta]))
 
 (defn- execute-jdbc-query
   "JDBC access to execute SQL **query** using optional **query-handler-fn**
   function with the results."
-  [query query-handler-fn]
-  (jdbc/with-db-connection [db @dbspec]
-    (swap! query-no inc)
-    (let [conn (resolve-connection db)
-          stmt (.createStatement conn)
-          curr-query-no @query-no]
-      (log/debugf "query numbrer: %s" curr-query-no)
-      (reset! query-thread (Thread/currentThread))
-      (check-interrupt curr-query-no)
-      (letfn [(pr-row-count [start rows]
-                (let [end (System/currentTimeMillis)
-                      wait-time (double (/ (- end start) 1000))]
-                  (print-sql-exception (.getWarnings stmt))
-                  (.clearWarnings stmt)
-                  (if (< 0 rows)
-                    (println (format "%d row(s) affected (%ss)"
-                                     rows wait-time)))))]
-        (print-sql-exception (.getWarnings conn))
-        (.clearWarnings conn)
-        (try
-          (log/infof "executing: %s" query)
-          (let [start (System/currentTimeMillis)]
-            (check-interrupt curr-query-no)
-            (if (.execute stmt query)
-              (let [rs (.getResultSet stmt)
-                    meta (.getMetaData rs)]
-                (try
-                  (check-interrupt curr-query-no)
-                  (pr-row-count start (query-handler-fn rs meta))
-                  (finally (try
-                             (.close rs)
-                             (catch SQLException e
-                               (log/error (format-sql-exception e)))))))
-              (pr-row-count start (.getUpdateCount stmt))))
-          (reset! last-frame-label query)
-          (catch SQLException e
-            (log/error (format-sql-exception e))
-            (.cancel stmt))
-          (finally
-            (reset! query-thread nil)
-            (.close stmt)))))))
+  [query query-handler-fn db]
+  (swap! query-no inc)
+  (let [conn (resolve-connection db)
+        stmt (.createStatement conn)
+        curr-query-no @query-no]
+    (log/debugf "query numbrer: %s" curr-query-no)
+    (reset! query-thread (Thread/currentThread))
+    (check-interrupt curr-query-no)
+    (letfn [(pr-row-count [start rows]
+              (let [end (System/currentTimeMillis)
+                    wait-time (double (/ (- end start) 1000))]
+                (print-sql-exception (.getWarnings stmt))
+                (.clearWarnings stmt)
+                (if (< 0 rows)
+                  (println (format "%d row(s) affected (%ss)"
+                                   rows wait-time)))))]
+      (print-sql-exception (.getWarnings conn))
+      (.clearWarnings conn)
+      (try
+        (log/infof "executing: %s" query)
+        (let [start (System/currentTimeMillis)]
+          (check-interrupt curr-query-no)
+          (if (.execute stmt query)
+            (let [rs (.getResultSet stmt)
+                  meta (.getMetaData rs)]
+              (try
+                (check-interrupt curr-query-no)
+                (pr-row-count start (query-handler-fn rs meta))
+                (finally (try
+                           (.close rs)
+                           (catch SQLException e
+                             (log/error (format-sql-exception e)))))))
+            (pr-row-count start (.getUpdateCount stmt))))
+        (reset! last-frame-label query)
+        (catch SQLException e
+          (log/error (format-sql-exception e))
+          (.cancel stmt))
+        (finally
+          (reset! query-thread nil)
+          (.close stmt))))))
 
 (defn- execute-query-nowait
   "Execute SQL **query** using optional **query-handler-fn** function with the
   results."
   [query query-handler-fn]
-  (let [[meta-query? table] (re-find meta-query-pattern query)]
-    (if (and false meta-query?)
-      (let [[rs meta] (table-metadata table)]
-        (try
-          (query-handler-fn rs meta)
-          (finally (try
-                     (.close rs)
-                     (catch SQLException e
-                       (log/error (format-sql-exception e)))))))
-      (execute-jdbc-query query query-handler-fn))))
+  (jdbc/with-db-connection [db @dbspec]
+    (let [[meta-query? table] (re-find meta-query-pattern query)]
+      (if meta-query?
+        (let [[rs meta] (table-metadata table db)]
+          (try
+            (query-handler-fn rs meta)
+            (finally (try
+                       (.close rs)
+                       (catch SQLException e
+                         (log/error (format-sql-exception e)))))))
+        (execute-jdbc-query query query-handler-fn db)))))
 
 (defn- wait-atom-or-future
   [quit-atom fut timeout]
