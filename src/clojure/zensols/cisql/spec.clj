@@ -205,13 +205,6 @@ downloads the JDBC drivers."
     (println "# Driver Registry")
     (println (driver-describe))))
 
-(def driver-describe-command
-  "CLI command to list drivers currently installed."
-  {:description "List drivers currently installed"
-   :options []
-   :app (fn [opts & args]
-          (print-drivers))})
-
 (defn driver-add [name opts]
   (log/infof "loading driver: %s" name)
   (binding [parse/*rethrow-error* (conf/config :prex)]
@@ -220,6 +213,13 @@ downloads the JDBC drivers."
         (load-dependencies flat)
         (put-flat flat)
         (reset)))))
+
+(def driver-describe-command
+  "CLI command to list drivers currently installed."
+  {:description "List drivers currently installed"
+   :options []
+   :app (fn [opts & args]
+          (print-drivers))})
 
 (def driver-add-command
   "CLI command to install a JDBC driver."

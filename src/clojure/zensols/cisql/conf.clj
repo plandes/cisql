@@ -1,4 +1,5 @@
-(ns ^{:doc "Configuration package"
+(ns ^{:doc "Manages application level configuration using the Java Prefernces
+system."
       :author "Paul Landes"}
     zensols.cisql.conf
   (:require [clojure.string :as str]

@@ -1,4 +1,7 @@
-(ns zensols.cisql.db-access
+(ns ^{:doc "Layer between the application and JDBC.  It also makes calls to
+print and display result sets."
+      :author "Paul Landes"}
+    zensols.cisql.db-access
   (:import [sun.misc Signal SignalHandler]
            [java.io BufferedReader InputStreamReader StringReader]
            [java.sql SQLException]

@@ -1,4 +1,4 @@
-(ns ^{:doc "Preference support"
+(ns ^{:doc "Preference support using the Java Preferences system."
       :author "Paul Landes"}
   zensols.cisql.pref
   (:import (com.zensols.gui.pref PrefSupport))

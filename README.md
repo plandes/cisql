@@ -26,6 +26,7 @@ Features include:
 
 - [Obtaining](#obtaining)
 - [Usage](#usage)
+    - [Online Help](#online-help)
     - [Queries and Directives](#queries-and-directives)
     - [Variables](#variables)
     - [Graphical Results](#graphical-results)
@@ -70,6 +71,13 @@ Clojure Interactive SQL (cisql) v0.0.10
 (C) Paul Landes 2015 - 2019
  1 >
 ```
+
+
+### Online Help
+
+Typing `help` at the command line gives a list of
+[directives](#queries-and-directives) and [variables](#variables).  To get help
+additional help for directives, type `help <directive name>`.
 
 
 ### Queries and Directives

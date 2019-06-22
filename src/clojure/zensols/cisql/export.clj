@@ -1,11 +1,15 @@
-(ns zensols.cisql.export
-  (:require [clojure.tools.logging :as log]
-            [clojure.java.io :as io]
-            [clojure.data.csv :as csv]
-            [clojure.pprint :refer (pprint print-table)]
-            [zensols.tabres.display-results :as dis]
-            [zensols.cisql.conf :as conf]
-            [zensols.cisql.db-access :as db]))
+(ns ^{:doc "This library contains functions that allow for exporting of table data.
+
+This includes functions to export to CSV files and "
+      :author "Paul Landes"}
+    zensols.cisql.export
+    (:require [clojure.tools.logging :as log]
+              [clojure.java.io :as io]
+              [clojure.data.csv :as csv]
+              [clojure.pprint :refer (pprint print-table)]
+              [zensols.tabres.display-results :as dis]
+              [zensols.cisql.conf :as conf]
+              [zensols.cisql.db-access :as db]))
 
 (defn- export-table-csv
   "Execute **query** and save as an CSV file to **filename**."
