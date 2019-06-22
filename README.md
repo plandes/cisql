@@ -9,12 +9,14 @@ PostgreSQL out of the box.  Additional JDBC drivers can easily be added in a
 
 Features include:
 
-* A GUI tabulation presentation, which is handy for very large result sets.
+* Multiple GUI tabulation frames for query results.
 * Use any JDBC driver to connect almost any database.
+* Evaluate Clojure code as input directly SQL queries with JVM in memory
+  objects that come directly from the `java.sql.ResultSet`.
 * JDBC drivers are configured in the command event loop application and
   downloaded and integrated without having to restart.
 * Persist result sets as a `.csv` file.
-* Emacs interaction with the [cisql] library.
+* Emacs interaction with the [ciSQL] library.
 * Primitive variable setting (controls GUI interface, logging, etc).
 * Distribution is a one Java Jar file with all dependencies.
 
@@ -24,12 +26,16 @@ Features include:
 
 - [Obtaining](#obtaining)
 - [Usage](#usage)
+    - [Queries and Directives](#queries-and-directives)
+    - [Variables](#variables)
+    - [Graphical Results](#graphical-results)
+- [Database Access](#database-access)
     - [Connecting to a Database](#connecting-to-a-database)
     - [Installing new JDBC Drivers](#installing-new-jdbc-drivers)
         - [SQLite](#sqlite)
         - [Apache Drill](#apache-drill)
     - [Querying the database](#querying-the-database)
-    - [Command Line Usage](#command-line-usage)
+- [Emacs Integration](#emacs-integration)
 - [Documentation](#documentation)
 - [Changelog](#changelog)
 - [License](#license)
@@ -62,13 +68,110 @@ Clojure Interactive SQL (cisql) v0.0.10
 ```
 
 
-### Query
+### Queries and Directives
 
 Each line of input is either is a part or whole SQL query, or it is a
 `directive`.  A `directive` includes commands meant for the program itself.
 There are some directives that take queries as (usually optional) input like
 the `export` directive.  You can get a list of directives and how to use them
 using the `help` directive.
+
+Every SQL query given is stored even after the results are retrieved from the
+database and displayed.  This query is referred to as the *last query* and is
+used in many directives like the `export` directive as mentioned.
+
+**Important**: Those queries entered without an ending line separator
+(i.e. `;`) used with a directive on a new line are not recorded as the *last
+query*.
+
+For example, the following code prints the `coder` column of the table in one
+line:
+```sql
+select * from coders
+eval (fn [r _] (println (map #(get % "coder") r)))
+```
+
+However, if you had used just (notice the ending line separator (`;`)):
+```sql
+select * from coders;
+```
+
+**then** you used the `eval` directive:
+```clojure
+eval (fn [r _] (println (map #(get % "coder") r)))
+```
+it would produce the same output because it uses the select used on the single
+line.  In this way, you can *up arrow* as many times as you want without having
+to produce different SQL.  For the `eval` directive, this is very useful as you
+*debug* your directive.
+
+To get a list of directives, use the `help` directive.
+
+
+### Variables
+
+The program keeps track of variables across sessions, which is persisted in
+using the Java persistence framework.  You can set a variable with the `set`
+directive.  For example, to set the prompt:
+```sql
+set prompt C:/>
+```
+
+Certain variables are booleans like `gui`, which tells the program to show
+results in a GUI frame.  These variables should be toggled with the `tg`
+directive.
+
+To list all variables, use the `sh` directive, which also takes a variable name
+as a parameter if you want to see just one.
+
+
+### Graphical Results
+
+As mentioned in the [section on variables](#variables), use `tg gui` to switch
+between using a GUI based frame to report results and a text based table in the
+same command line window.
+
+By default each query replaces the results of the last.  However, you can
+create multiple windows to compare results by using the `orph` directive.  This
+*orphans* the window from any further result reporting.  The directive takes a
+`label` argument, which is used in the frame title.
+
+
+### Evaluation
+
+You can "pipe" the results of queries to your own custom Clojure code.  The
+easiest way to do this is using the `eval` directive as demonstrated in the
+[queries and directives](#queries-and-directives) section.  In addition, the
+`load` directive reads a Clojure file and uses the defined function to process
+the query results.  Like the `eval` directive, this function takes the
+following parameters:
+* **rows**: a lazy sequence of maps, each map is a key/value set of column
+  name to value.
+* **header**: a list of string column names
+
+This example adds the string `Mrs` to each row for the `coder` column:
+```clojure
+(ns temporary
+  (:require [clojure.tools.logging :as log]))
+
+(defn- process-query [rows header]
+  (log/debugf "header: %s" (vec header))
+  (let [col-name "coder"]
+   (->> rows
+        (map (fn [row]
+               (assoc row col-name (str "Mrs " (get row col-name)))))
+        (array-map :header header :rows)
+        (array-map :display))))
+```
+
+**Important**: The function to evaluate must be the last symbolic expression in
+the file.
+
+
+## Database Access
+
+Since the program is written in a Java Virtual Machine language any JDBC driver
+can be used.
 
 
 ### Connecting to a Database
@@ -86,14 +189,14 @@ Connect to a database
       --port <number>                 database port
 ```
 
-To connect to an *SQLite* database, use the following:
+For example, to connect to an *SQLite* database, use the following:
 ```sql
  1 > conn sqlite --database awards.sqlite
 spec: loading dependencies for [[org.xerial/sqlite-jdbc "3.8.11.2"]]
 configured jdbc:sqlite:awards.sqlite
 ```
 
-Connect to a *mySql* database:
+To connect to a *mySql* database:
 ```sql
  1 > conn postgres -u puser -p pass -d puser -h 192.168.99.100
 spec: loading dependencies for [[postgresql/postgresql "9.1-901-1.jdbc4"]]
@@ -200,30 +303,19 @@ The last command creates a new `.csv` spreadsheet file shown below:
 ![Spreadsheet .csv](https://plandes.github.io/cisql/img/spreadsheet-export.png)
 
 
-### Command Line Usage
+## Emacs Integration
 
-The command line usage is given below for convenience.
-```sql
-usage: cisql [options]
+If you're an Emacs user, the [ciSQL] library is available, which integrates
+with the [Emacs SQL system](#https://www.emacswiki.org/emacs/SqlMode).
 
-Clojure Interactive SQL (cisql) v0.0.12
-(C) Paul Landes 2015 - 2017
-
-Start an interactive session
-  -l, --level <log level>       INFO       Log level to set in the Log4J2 system.
-  -n, --name <product>                     DB implementation name
-  -u, --user <string>                      login name
-  -p, --password <string>                  login password
-  -h, --host <string>           localhost  database host name
-  -d, --database <string>                  database name
-      --port <number>                      database port
-  -c, --config <k1=v1>[,k2=v2]             set session configuration
-      --repl <number>                      the port bind for the repl server
-```
 
 ## Documentation
 
-API [documentation](https://plandes.github.io/cisql/codox/index.html).
+This program is written in Clojure.  See the API
+[documentation](https://plandes.github.io/cisql/codox/index.html).
+
+If you integrate this program with you own, please let me know.  I'm interested
+in knowing how others use it.
 
 
 ## Changelog
@@ -255,6 +347,6 @@ SOFTWARE.
 
 
 <!-- links -->
-[cisql]: https://github.com/plandes/cisql
+[ciSQL]: https://github.com/plandes/icsql
 [travis-link]: https://travis-ci.org/plandes/cisql
 [travis-badge]: https://travis-ci.org/plandes/cisql.svg?branch=master

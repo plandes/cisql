@@ -78,7 +78,7 @@
 
 (defn export-query-to-eval
   [query last-query code]
-  (let [handler-fn (eval code)
+  (let [handler-fn (eval (read-string code))
         title "eval"
         res-inst (atom nil)]
     (letfn [(rs-handler [rs]

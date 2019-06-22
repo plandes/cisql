@@ -1,8 +1,9 @@
 (ns ^{:doc "Default installed directives."
       :author "Paul Landes"}
     zensols.cisql.directive
-  (:require [clojure.tools.logging :as log])
-  (:require [zensols.actioncli.log4j2 :as lu]
+  (:require [clojure.tools.logging :as log]
+            [clojure.string :as s]
+            [zensols.actioncli.log4j2 :as lu]
             [zensols.actioncli.parse :as parse]
             [zensols.cisql.conf :as conf]
             [zensols.cisql.read :as r]
@@ -151,7 +152,7 @@
           (let [key (keyword (first args))
                 oldval (conf/config key)
                 newval (if (> (count args) 1)
-                         (second args)
+                         (s/join " " (rest args))
                          query)]
             (conf/set-config key newval)
             ;; end of query terminator has changed so reinitialize grammer
@@ -216,12 +217,13 @@
    {:name "load"
     :arg-count 1
     :usage "<clojure file>"
-    :desc "evaluate the last function in a clojure file"
+    :desc "evaluate a query with the last function in a clojure file"
     :fn (fn [{:keys [query last-query]} [clj-file]]
           (ex/export-query-to-function query last-query clj-file))}
    {:name "eval"
     :arg-count "*"
-    :usage "<Clojure code>"
-    :desc "evaluate clojure code"
-    :fn (fn [{:keys [query last-query]} [code]]
-          (ex/export-query-to-eval query last-query code))}])
+    :usage "<clojure code>"
+    :desc "evaluate a query with clojure code"
+    :fn (fn [{:keys [query last-query]} code]
+          (ex/export-query-to-eval query last-query
+                                   (s/join " " code)))}])
