@@ -53,7 +53,7 @@
     (let [data (->> data
                     (map (fn [row]
                            (map #(get row %) header))))]
-     (dis/display-results data :columns header :title title))
+      (dis/display-results data :column-names header :title title))
     (print-table header data)))
 
 (defn export-query-to-function
