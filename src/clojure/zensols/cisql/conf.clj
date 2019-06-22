@@ -10,18 +10,18 @@ system."
 
 (def ^:private var-meta
   [[:strict true "if true, do not allow setting of free variables"
-    "#built-in-and-user-variables"]
+    "built-in-and-user-variables"]
    [:linesep ";" "tell where to end a query and then send"]
    [:loglevel "info" "logging verbosity (<error|warn|info|debug|trace>)"]
    [:errorlong false "if true, provide more SQL level error information"]
    [:prex false "print exception stack traces"]
    [:prompt " %1$s > " "a format string for the promp"
-    "#variables"]
+    "variables"]
    [:sigintercept true "if true, intercept and break on Control-C signals"]
    [:gui false "use a graphical window to display result sets"
-    "#graphical-results"]
+    "graphical-results"]
    [:guiwin true "use separate window for GUI (require restart)"
-    "#graphical-results"]
+    "graphical-results"]
    [:end-directive "exit" "string used to exit the program"]
    [:help-directive "help" "string used to print help"]])
 
@@ -32,7 +32,8 @@ system."
 
 (def ^:private help-sections
   (->> var-meta
-       (map #(array-map (first %) (nth % 2)))
+       (map #(array-map (first %) (if (> (count %) 3)
+                                    (nth % 3))))
        (apply merge)))
 
 (def ^:private system-properties
