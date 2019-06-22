@@ -1,0 +1,245 @@
+#!/usr/bin/perl
+# $Id$
+
+# Copyright (C) 2010 Paul Landes
+# Written by Paul Landes <paullandes at airpost dot net> 05/25/2010
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program; see the file COPYING.  If not, write to the
+# Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+# Boston, MA 02111-1307, USA.
+
+# Commentary: install maven files
+
+use strict;
+use Getopt::Long;
+use Pod::Usage;
+
+# program name, used for usage, etc.
+our $PROG = "install-maven-file";
+our $VERSION;
+BEGIN {
+  my $temp = '$Revision$';
+  ($temp) = ( $temp =~ /^\$Revision\:\ (.*?)\ \$$/ );
+  $VERSION = $temp;
+}
+
+##
+# Parse and (optionally) validate command line options (ala @ARGV).
+# Return an array of a hash reference (options) and an array reference
+# (remaining command line parameters).
+sub parseOptions {
+  my (@extraParams, $error);
+  my %options = ( whine => 0 );
+
+  if ( !GetOptions(\%options, 'help', 'version',
+		   '<>' => sub { push @extraParams, $_[0] },
+		   'whine=i', 'norun') ) {
+    death(undef, 1, 0);
+  } elsif ($options{help}) {
+    death(undef, 0, 2, \*STDOUT);
+  } elsif ($options{version}) {
+    print "v$VERSION\n";
+    exit 0;
+  }
+
+  return (\%options, \@extraParams);
+}
+
+##
+# Main entry point.
+# params:
+#   $options - hash reference of each long option (keys) to their
+#              command line values
+#   $params - an array reference of all options given on the command
+#             line; these are the remainder string tokens not
+#             interpreted as options
+sub main {
+  my ($options, $params) = @_;
+  my ($group, $artifact, $version, $file, $cmd);
+
+  if (scalar(@$params) == 2) {
+    $file = $params->[1];
+    if ( $file =~ /^(.*)-([\d.]+).jar$/ ) {
+      ($group, $artifact, $version) = ($params->[0], $1, $2);
+    } else {
+      death("couldn't determine artifact or version", 1, 0);
+    }
+  } elsif (scalar(@$params) == 4) {
+    ($group, $artifact, $version, $file) = @$params;
+  } else {
+    death(undef, 1, 0);
+  }
+
+  $cmd = "mvn install:install-file -DgroupId=$group -DartifactId=$artifact -Dversion=$version -Dfile=$file -DgeneratePom=true -Dpackaging=jar";
+  executeCommand({ cmd => $cmd, execute => (! $options->{norun}) },
+		 ($options->{whine} > 1), 0);
+}
+
+main(parseOptions());
+
+
+## lib functions
+
+## Exit the program with an error message (goes to standard error).
+#
+# params:
+#    $errrorMsg - string message to print
+#    $exitVal - exit code to return from the program
+#    $verbose - if given (defined), print usage inforomation at that POD
+#               verbosity level
+sub death {
+  my ($errorMsg, $exitVal, $verbose) = @_;
+
+  $exitVal = 1 if (! defined $exitVal);
+
+  if (defined $verbose) {
+    my $h = $exitVal ? \*STDERR : \*STDOUT;
+    if (defined $errorMsg) {
+      pod2usage( { -message => "$PROG: $errorMsg",
+		   -exitval => $exitVal,
+		   -verbose => $verbose,
+		   -output  => \*STDOUT } );
+    } else {
+      pod2usage( { -exitval => $exitVal,
+		   -verbose => $verbose,
+		   -output  => \*STDOUT } );
+    }
+  } else {
+    print STDOUT "$PROG: $errorMsg\n";
+  }
+
+  exit $exitVal;
+}
+
+# Execute a command by shelling out (fork/exec) and wait for the response.
+#
+# params:
+#   $cmd - the command to invoke
+#   $verbosity - the number (higher the more) of how verbose to be (default 1)
+#   $expectedExit - if defined, bail on any return value from command that is
+#                   not equal, otherwise, just return the exit code of $cmd
+#   $extraEnv - additional environment variables (hash) to set for the
+#               execution
+sub executeCommand {
+  my ($cmdEntry, $verbosity, $expectedExit, $extraEnv) = @_;
+  my ($cmd, $doExecute) = ($cmdEntry->{cmd}, $cmdEntry->{execute});
+  my ($ret);
+
+  $verbosity = 1 if (! defined $verbosity);
+  $ret = 1 if (! defined $verbosity);
+
+  print "executing: $cmd\n" if ($verbosity > 0);
+  if (($verbosity > 1) && (defined $extraEnv)) {
+    print "enviornemnt:\n";
+    while ( my ($k, $v) = each %$extraEnv ) { print "$k => $v\n"; }
+  }
+
+  if ($doExecute) {
+    my %org = %ENV;
+    if (defined $extraEnv) {
+      while ( my ($k, $v) = each %$extraEnv ) { $ENV{$k} = $v; }
+    }
+    $ret = system($cmd) / 256;
+    %ENV = %org;
+  } else {
+    $ret = $expectedExit;
+  }
+
+  if (defined $expectedExit and $ret != $expectedExit) {
+    death("command `$cmd' failed ($ret): $!");
+  }
+
+  return $ret;
+}
+
+__END__
+
+=head1 NAME
+
+install-maven-file - install maven files.
+
+
+=head1 SYNOPSIS
+
+install-maven-file <groupId> <artifactId> <version> <file>
+
+install-maven-file [ -n ] [ -w <level> ] <groupId> <file>
+
+install-maven-file [ -h/--help ] [ -v/--version ]
+
+
+=head1 DESCRIPTION
+
+B<install-maven-file> will install maven files
+
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<-h, --help>
+
+Print a brief help message and exits.
+
+=item B<-v, --version>
+
+Prints program version and exists.
+
+=item B<-w, --whine> <I<level>>
+
+Degree at which to complain or be verbose.  The higher the level the more the
+proram whines.  Value range is currently C<0 - 2>, where as 0 doesn't output
+anything.  This defaults to 0.
+
+=back
+
+
+=head1 EXAMPLE
+
+Both of the below install a maven file with groupId of C<org.apache>, groupId
+of C<axis2-jaxws>, and version C<1.5.1>.
+
+=over2
+
+install-maven-file -w 2 org.apache axis2-jaxws-1.5.1.jar
+
+install-maven-file -w 2 org.apache axis2-jaxws 1.5.1 axis2-jaxws-1.5.1.jar
+
+=back
+
+
+=head1 COPYRIGHT
+
+Copyright (C) 2010-2019 Paul Landes
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; see the file COPYING.  If not, write to the
+Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+Boston, MA 02111-1307, USA.
+
+=head1 AUTHOR
+
+Paul Landes <paullandes at airpost dot net>
+
+=cut
