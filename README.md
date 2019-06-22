@@ -172,6 +172,19 @@ This example adds the string `Mrs` to each row for the `coder` column:
 the file.
 
 
+### Bad State
+
+If for any reason the program gets in a bad state, you can reset data to their
+defaults.  The directives used for this are:
+
+* **purgedrv** remove all JDBC driver configuration.
+* **resetenv** reset all variables back to their initial values.
+* **vaporize** clear all application data.
+
+Of course you want to exercises extreme caution with these as they are very
+destructive.
+
+
 ## Database Access
 
 Since the program is written in a Java Virtual Machine language any JDBC driver
