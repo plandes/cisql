@@ -257,9 +257,9 @@ configured jdbc:postgresql://puser:pass@localhost:5432/puser
 
 The tool itself comes with no JDBC drivers.  However it does have JDBC
 *configuration* settings for popular databases and are configured in the
-[driver.csv resource].  The system uses the [maven repository] system and will
-automatically download and use the new driver without having to exit and
-restart the program.
+[driver resource](resources/driver.csv).  The system uses the [maven
+repository] system and will automatically download and use the new driver
+without having to exit and restart the program.
 
 To configure and install a new JDBC driver (in this example to read comma
 delimited CSV files):
@@ -405,6 +405,5 @@ SOFTWARE.
 [travis-link]: https://travis-ci.org/plandes/cisql
 [travis-badge]: https://travis-ci.org/plandes/cisql.svg?branch=master
 
-[driver.csv resource]: https://github.com/plandes/cisql/blob/master/resources/driver.csv
 [maven repository]: https://mvnrepository.com
 [maven install plugin]: https://maven.apache.org/guides/mini/guide-3rd-party-jars-local.html
