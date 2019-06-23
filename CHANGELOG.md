@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+
+## [0.0.15] - 2019-06-23
+
 ### Added
 - Adding CHANGELOG.md and lots of doc.
 - Connection in session.
@@ -16,7 +19,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Clojure evaluation of result set data (`load` and `eval` directives).
 - Basic macros (`do` directive).
 - Online help (`man` directive).
-
 
 ### Changed
 - Refactor parsing/processing.
@@ -46,6 +48,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Build
 
 
-[Unreleased]: https://github.com/plandes/cisql/compare/v0.0.13...HEAD
+[Unreleased]: https://github.com/plandes/cisql/compare/v0.0.15...HEAD
+[0.0.15]: https://github.com/plandes/clj-mkproj/compare/v0.0.12...v0.0.15
 [0.0.12]: https://github.com/plandes/clj-mkproj/compare/v0.0.12...v0.0.13
 [0.0.11]: https://github.com/plandes/clj-mkproj/compare/v0.0.10...v0.0.11
