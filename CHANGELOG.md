@@ -8,15 +8,23 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 ### Added
-- Connection in session
-- Adding CHANGELOG.md
+- Adding CHANGELOG.md and lots of doc.
+- Connection in session.
 - Moving to lein-git-version 1.2.7.
 - Interrupt long blocking queries.
+- Handle multiple maven coordinates for driver dependencies.
+- Clojure evaluation of result set data (`load` and `eval` directives).
+- Basic macros (`do` directive).
+- Online help (`man` directive).
+
 
 ### Changed
 - Refactor parsing/processing.
 - Move to instaparse for directive parsing.
 - URL centric JDBC connection configuration.
+- Better variable handling and add `strict`.
+- Upgrade to Cider 0.21.0 and nREPL.
+- Upgrade to Clojure 1.9.
 
 
 ## [0.0.12] -2017-01-27
