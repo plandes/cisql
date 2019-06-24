@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
 ## [Unreleased]
+
+
+## [0.0.16] - 2019-06-23
 ### Changed
 - Fixed GUI window/system trey popup ignore `guiwin` variable.
 
@@ -49,7 +52,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Build
 
 
-[Unreleased]: https://github.com/plandes/cisql/compare/v0.0.15...HEAD
+[Unreleased]: https://github.com/plandes/cisql/compare/v0.0.16...HEAD
+[0.0.16]: https://github.com/plandes/cisql/compare/v0.0.15...v0.0.16
 [0.0.15]: https://github.com/plandes/clj-mkproj/compare/v0.0.12...v0.0.15
 [0.0.12]: https://github.com/plandes/clj-mkproj/compare/v0.0.12...v0.0.13
 [0.0.11]: https://github.com/plandes/clj-mkproj/compare/v0.0.10...v0.0.11
