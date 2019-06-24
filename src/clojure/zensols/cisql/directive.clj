@@ -279,6 +279,13 @@ See README.md for more information on directives."
           (->> varnames
                (map #(conf/config (keyword %) :expect? true))
                (array-map :eval )))}
+   {:name "clear"
+    :arg-count 0
+    :desc "clears any query"
+    :help-section "querying-the-database"
+    :fn (fn [& args]
+          ;; last query will clear after the next event loop cycle
+          )}
    {:name "load"
     :arg-count "*"
     :usage "[file] [function]"

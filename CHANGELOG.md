@@ -9,8 +9,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
 ## [0.0.16] - 2019-06-23
+### Added
+- Add the `clear` directive to clear the query.
 ### Changed
-- Fixed GUI window/system trey popup ignore `guiwin` variable.
+- Changed variable `guiwin` to `headless`.
+- Fixed GUI window/headless popup ignore `headless` variable.
 
 
 ## [0.0.15] - 2019-06-23

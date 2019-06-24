@@ -20,7 +20,7 @@ system."
    [:sigintercept true "if true, intercept and break on Control-C signals"]
    [:gui false "use a graphical window to display result sets"
     "graphical-results"]
-   [:guiwin true "use separate window for GUI (require restart)"
+   [:headless true "use separate window for GUI (require restart)"
     "graphical-results"]
    [:end-directive "exit" "string used to exit the program"]
    [:help-directive "help" "string used to print help"]])
@@ -37,7 +37,7 @@ system."
        (apply merge)))
 
 (def ^:private system-properties
-  {:guiwin "apple.awt.UIElement"})
+  {:headless "apple.awt.UIElement"})
 
 (def ^:private set-config-hooks (atom #{}))
 

@@ -131,7 +131,8 @@ line.  In this way, you can *up arrow* as many times as you want without having
 to produce different SQL.  For the `eval` directive, this is very useful as you
 *debug* your directive.
 
-To get a list of directives, use the `help` directive.
+To purge any previous query use the `clear` directive.  To get a list of
+directives, use the `help`.
 
 
 ### Variables
@@ -201,7 +202,7 @@ create multiple windows to compare results by using the `orph` directive.  This
 *orphans* the window from any further result reporting.  The directive takes a
 `label` argument, which is used in the frame title.
 
-When the variable `guiwin` is set to `true` then a separate application window
+When the variable `headless` is set to `false` then a separate application window
 starts when results are available for graphical display.
 
 
