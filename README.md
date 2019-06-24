@@ -199,7 +199,7 @@ command event loop of the program.  This setting produces a graphical results
 that are much easier to view and handles large result sets efficiently.  An
 example of a GUI results set frame follows.
 
-![Spreadsheet.csv](https://plandes.github.io/cisql/img/spreadsheet-export.png)
+![GUI Results](https://plandes.github.io/cisql/img/results.png)
 
 By default each query replaces the results of the last.  However, you can
 create multiple windows to compare results by using the `orph` directive.  This
@@ -458,9 +458,9 @@ gui: false -> true
 10 row(s) affected (0.828s)
 ```
 
-The last command produces the following GUI results window:
+The last command produces the GUI results window given in the [graphical result
+set](#graphical-results) section.
 
-![GUI Results](https://plandes.github.io/cisql/img/results.png)
 
 ```sql
  1 > orph awards
@@ -469,8 +469,9 @@ The last command produces the following GUI results window:
  1 > export /d/awards.csv
 20 row(s) affected (0.014s)
 ```
-The last command creates a new `.csv` spreadsheet file as shown in the
-[graphical result set](#graphical-results) section.
+The last command creates a new `.csv` spreadsheet file as shown:
+
+![Spreadsheet.csv](https://plandes.github.io/cisql/img/spreadsheet-export.png)
 
 
 ### Removing JDBC Drivers
