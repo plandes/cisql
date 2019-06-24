@@ -37,7 +37,7 @@ system."
        (apply merge)))
 
 (def ^:private system-properties
-  {:guinotrey "apple.awt.UIElement"})
+  {:guiwin "apple.awt.UIElement"})
 
 (def ^:private set-config-hooks (atom #{}))
 

@@ -6,10 +6,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
 ## [Unreleased]
+### Changed
+- Fixed GUI window/system trey popup ignore `guiwin` variable.
 
 
 ## [0.0.15] - 2019-06-23
-
 ### Added
 - Adding CHANGELOG.md and lots of doc.
 - Connection in session.
