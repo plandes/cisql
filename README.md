@@ -48,7 +48,7 @@ Features include:
     - [Installing new JDBC Drivers](#installing-new-jdbc-drivers)
         - [SQLite](#sqlite)
         - [Apache Drill](#apache-drill)
-    - [Querying the database](#querying-the-database)
+    - [Querying the Database](#querying-the-database)
     - [Removing JDBC Drivers](#removing-jdbc-drivers)
 - [Emacs Integration](#emacs-integration)
 - [Documentation](#documentation)
