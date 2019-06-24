@@ -418,7 +418,7 @@ The following installs the direct drill bit JDBC driver:
 ```
 
 
-### Querying the database
+### Querying the Database
 
 These examples show how to list tables in the database, a particular table and
 a select from that table.
@@ -465,15 +465,24 @@ The last command produces the following GUI results window:
  1 > export /d/awards.csv
 20 row(s) affected (0.014s)
 ```
-The last command creates a new `.csv` spreadsheet file shown below:
+The last command creates a new `.csv` spreadsheet file as shown in the
+[graphical result set](#graphical-result-set) section.
 
-![Spreadsheet .csv](https://plandes.github.io/cisql/img/spreadsheet-export.png)
 
 
 ### Removing JDBC Drivers
 
 Use the `removedrv` to remove a JDBC driver.  Note this only removes the entry
 in the configuration and not the driver jar in the maven repository on disk.
+
+
+## Graphical Result Sets
+
+As mentioned in the [query](#querying-the-database) section, using `set gui
+true` produces a graphical result set that is much easier to view.  It also
+handles large result sets efficiently.
+
+![Spreadsheet.csv](https://plandes.github.io/cisql/img/spreadsheet-export.png)
 
 
 ## Emacs Integration
