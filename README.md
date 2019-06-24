@@ -195,7 +195,11 @@ First connects to an SQLite database, and executes two `select` statements.
 
 As mentioned in the [section on variables](#variables), use `tg gui` to switch
 between using a GUI based frame to report results and a text based table in the
-command event loop of the program.
+command event loop of the program.  This setting produces a graphical results
+that are much easier to view and handles large result sets efficiently.  An
+example of a GUI results set frame follows.
+
+![Spreadsheet.csv](https://plandes.github.io/cisql/img/spreadsheet-export.png)
 
 By default each query replaces the results of the last.  However, you can
 create multiple windows to compare results by using the `orph` directive.  This
@@ -466,23 +470,13 @@ The last command produces the following GUI results window:
 20 row(s) affected (0.014s)
 ```
 The last command creates a new `.csv` spreadsheet file as shown in the
-[graphical result set](#graphical-result-set) section.
-
+[graphical result set](#graphical-results) section.
 
 
 ### Removing JDBC Drivers
 
 Use the `removedrv` to remove a JDBC driver.  Note this only removes the entry
 in the configuration and not the driver jar in the maven repository on disk.
-
-
-## Graphical Result Sets
-
-As mentioned in the [query](#querying-the-database) section, using `set gui
-true` produces a graphical result set that is much easier to view.  It also
-handles large result sets efficiently.
-
-![Spreadsheet.csv](https://plandes.github.io/cisql/img/spreadsheet-export.png)
 
 
 ## Emacs Integration
