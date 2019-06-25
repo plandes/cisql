@@ -178,14 +178,6 @@ See README.md for more information on directives."
                    (format "%s: %s" vkey)
                    println)
               (conf/print-key-values))))}
-   {:name "rm"
-    :arg-count 1
-    :usage "<variable>"
-    :desc "delete user variable"
-    :help-section "variables"
-    :fn (fn [opts [name]]
-          (assert-no-query opts)
-          (conf/remove-config (keyword name)))}
    {:name "set"
     :arg-count "*"
     :usage "<variable> [value]"
@@ -206,6 +198,14 @@ See README.md for more information on directives."
                                 %)))]
             (conf/set-config key newval)
             (println (format "%s: %s -> %s" (name key) oldval newval))))}
+   {:name "rm"
+    :arg-count 1
+    :usage "<variable>"
+    :desc "delete user variable"
+    :help-section "variables"
+    :fn (fn [opts [name]]
+          (assert-no-query opts)
+          (conf/remove-config (keyword name)))}
    {:name "tg"
     :arg-count 1
     :usage "<variable>"
