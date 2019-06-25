@@ -325,14 +325,13 @@ Return a map with entries:
    (execute-query query display-result-set))
   ([query query-handler-fn]
    (assert-connection)
+   (reset! interrupt-execute-query nil)
    (if (not (conf/config :sigintercept))
      (execute-query-nowait query query-handler-fn)
-     (do
-       (reset! interrupt-execute-query nil)
-       (let [query-fut (future (execute-query-nowait query query-handler-fn))
-             wait-fut (poll-for-quit interrupt-execute-query query-fut 1000)]
-         (deref wait-fut)
-         (log/debugf "execute wait on feature complete"))))))
+     (let [query-fut (future (execute-query-nowait query query-handler-fn))
+           wait-fut (poll-for-quit interrupt-execute-query query-fut 1000)]
+       (deref wait-fut)
+       (log/debugf "execute wait on feature complete")))))
 
 (defn show-table-metadata
   "Display the meta data of **table**, which includes column names and metadata."
