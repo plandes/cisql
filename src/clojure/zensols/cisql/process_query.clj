@@ -57,24 +57,25 @@
   * **:end-session** the user has given the exit command
   * **:end-file** the user has hit the end of file sequence (CTRL-D)"
   ([dir-fns]
-   (process-queries dir-fns nil nil))
-  ([dir-fns query-data one-shot?]
+   (process-queries dir-fns nil))
+  ([dir-fns query-data]
    (log/debugf "entry query-data: %s" query-data)
-   (loop [query-data (or query-data (r/read-query))]
-     (log/debugf "query data: %s" query-data)
-     (let [{:keys [directive]} query-data
-           dir-fn (get dir-fns directive)
-           directives (di/directives-by-name)]
-       (log/tracef "directive: %s" directive)
-       (let [res (process-query dir-fn query-data directive directives)]
-         (if (and (map? res) (contains? res :eval))
-           (doseq [user-input (:eval res)]
-             (log/debugf "do processing: %s" user-input)
-             (let [new-res (process-queries dir-fns (r/read-query user-input) true)]
-               (log/debugf "do processed eval: %s -> %s" user-input res)))))
-       (when (and (not one-shot?) (= :end-of-query directive))
-         (log/debug "while read")
-         (recur (r/read-query)))))
+   (let [one-shot? (not (nil? query-data))]
+     (loop [query-data (or query-data (r/read-query))]
+       (log/debugf "query data: %s" query-data)
+       (let [{:keys [directive]} query-data
+             dir-fn (get dir-fns directive)
+             directives (di/directives-by-name)]
+         (log/tracef "directive: %s" directive)
+         (let [res (process-query dir-fn query-data directive directives)]
+           (if (and (map? res) (contains? res :eval))
+             (doseq [user-input (:eval res)]
+               (log/debugf "do processing: %s" user-input)
+               (let [new-res (process-queries dir-fns (r/read-query user-input))]
+                 (log/debugf "do processed eval: %s -> %s" user-input res)))))
+         (when (and (not one-shot?) (= :end-of-query directive))
+           (log/debug "while read")
+           (recur (r/read-query))))))
    (log/debugf "leave query-data: %s" query-data)))
 
 (defn- init-thread-exception-handler
