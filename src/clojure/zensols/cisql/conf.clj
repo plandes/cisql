@@ -21,9 +21,7 @@ system."
    [:gui false "use a graphical window to display result sets"
     "graphical-results"]
    [:headless true "use separate window for GUI (require restart)"
-    "graphical-results"]
-   [:end-directive "exit" "string used to exit the program"]
-   [:help-directive "help" "string used to print help"]])
+    "graphical-results"]])
 
 (def ^:private default-config
   (->> var-meta
@@ -135,7 +133,7 @@ system."
   []
   (let [conf (config)]
     (letfn [(pr-conf [key]
-              (println (format " * %s: %s "(name key) (get conf key))))]
+              (println (format " * %s: %s" (name key) (get conf key))))]
       (println "# Built in variables:")
       (->> (map first var-meta)
            (map pr-conf)
