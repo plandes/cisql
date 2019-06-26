@@ -61,6 +61,8 @@
          (read-input "  select * from tmpgo")))
   (is (= {:sql "   select * from tmp" :eoq? false}
          (read-input "   select * from tmp")))
+  (is (= {:sql "set b 1" :eoq? true}
+         (read-input "send set b 1go")))
   (is (= {:directive [:shtab] :eoq? false}
          (read-input " shtab")))
   (is (= {:directive [:shtab] :eoq? false}

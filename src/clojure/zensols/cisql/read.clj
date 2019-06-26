@@ -18,6 +18,7 @@
   (->> (cond (= "*" nargs) " (ws arg)*"
              (= "+" nargs) " (ws arg)+"
              (= ".." nargs) " (ws arg)?"
+             (= "-" nargs) " #\".+\""
              (and (number? nargs) (= 0 nargs)) ""
              (and (number? nargs) (= 1 nargs)) " ws arg"
              (and (number? nargs) (< 1 nargs))
@@ -25,16 +26,17 @@
        (str directive-name " = <'" directive-name "'>")))
 
 (defn- cmd-bnf-def [eoq directives]
-  (->> ["form = ws? directive ws? / sql eoq?"
-        (str "directive = " (s/join " | " (map :name directives)))
-        (->> directives
-             (map #(directive-bnf (:name %) (:arg-count %)))
-             (s/join \newline))
-        "<arg> = ( <\"'\"> #\"[^']+\" <\"'\"> / #\"[^ ]+\" )"
-        "<ws> = <#\"\\s+\">"
-        (str "sql = #\".+(?=" eoq ")\" / #\".+\"")
-        (str "eoq = <'" eoq "'>")]
-       (s/join \newline)))
+  (let [directives (filter #(:arg-count %) directives)]
+    (->> ["form = ws? directive ws? / sql eoq?"
+          (str "directive = " (s/join " | " (map :name directives)))
+          (->> directives
+               (map #(directive-bnf (:name %) (:arg-count %)))
+               (s/join \newline))
+          "<arg> = ( <\"'\"> #\"[^']+\" <\"'\"> / #\"[^ ]+\" )"
+          "<ws> = <#\"\\s+\">"
+          (str "sql = <'send' ws> #\".+?(?=" eoq ")\" / #\".+(?=" eoq ")\" / #\".+\"")
+          (str "eoq = <'" eoq "'>")]
+         (s/join \newline))))
 
 (defn set-grammer [end-of-query-separator directives]
   (->> (cmd-bnf-def end-of-query-separator directives)

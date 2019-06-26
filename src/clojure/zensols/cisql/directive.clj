@@ -133,6 +133,30 @@ See README.md for more information on directives."
    (command-line-directive "conn" "connect to a database"
                            'zensols.cisql.interactive 'interactive-directive
                            nil "connecting-to-a-database")
+   {:name "clear"
+    :arg-count 0
+    :desc "clears any stored query (saved from previous lines)"
+    :help-section "querying-the-database"
+    :fn (fn [& args]
+          ;; last query will clear after the next event loop cycle
+          )}
+   {:name "send"
+    :usage "<SQL>"
+    :desc "bypass directive processing and send the query verbatim"
+    :help-section "send-verbatim"}
+   {:name "sh"
+    :arg-count ".."
+    :usage "[variable]"
+    :desc "show 'variable', or show them all if not given"
+    :help-section "variables"
+    :fn (fn [opts args]
+          (assert-no-query opts)
+          (let [vkey (and (seq? args) (first args))]
+            (if vkey
+              (->> (conf/config (keyword vkey) :expect? true)
+                   (format "%s: %s" vkey)
+                   println)
+              (conf/print-key-values))))}
    {:name "shconn"
     :arg-count 0
     :desc "print the current connection information"
@@ -142,7 +166,7 @@ See README.md for more information on directives."
           (db/assert-connection)
           (println "# Connection")
           (->> (db/dbspec-meta-data)
-               (map #(println (format "* %s: %s" (name (first %)) (second %))))
+               (map #(println (format " * %s: %s" (name (first %)) (second %))))
                doall))}
    (command-line-directive "newdrv" "add a JDBC driver"
                            'zensols.cisql.spec 'driver-add-command
@@ -165,19 +189,6 @@ See README.md for more information on directives."
                            'zensols.cisql.spec
                            'driver-user-registry-purge-command
                            nil "connecting-to-a-database")
-   {:name "sh"
-    :arg-count ".."
-    :usage "[variable]"
-    :desc "show 'variable', or show them all if not given"
-    :help-section "variables"
-    :fn (fn [opts args]
-          (assert-no-query opts)
-          (let [vkey (and (seq? args) (first args))]
-            (if vkey
-              (->> (conf/config (keyword vkey) :expect? true)
-                   (format "%s: %s" vkey)
-                   println)
-              (conf/print-key-values))))}
    {:name "set"
     :arg-count "*"
     :usage "<variable> [value]"
@@ -275,17 +286,13 @@ See README.md for more information on directives."
     :usage "<variable 1> [variable 2]"
     :desc "execute the contents of a variables"
     :help-section "macros"
-    :fn (fn [_ varnames]
+    :fn (fn [opts varnames]
+          (assert-no-query opts)
+          (doseq [varname varnames]
+            (conf/config (keyword varname) :expect? true))
           (->> varnames
-               (map #(conf/config (keyword %) :expect? true))
-               (array-map :eval )))}
-   {:name "clear"
-    :arg-count 0
-    :desc "clears any query"
-    :help-section "querying-the-database"
-    :fn (fn [& args]
-          ;; last query will clear after the next event loop cycle
-          )}
+               (map #(conf/config (keyword %)))
+               (array-map :eval)))}
    {:name "load"
     :arg-count "*"
     :usage "[file] [function]"
@@ -301,13 +308,12 @@ See README.md for more information on directives."
               (throw (ex-info "invalid load syntax; try 'help'" {})))
            (ex/export-query-to-function query last-query clj-file fn-name)))}
    {:name "eval"
-    :arg-count "*"
+    :arg-count "-"
     :usage "<clojure code>"
     :desc "evaluate a query with clojure code"
     :help-section "evaluation"
-    :fn (fn [{:keys [query last-query]} code]
-          (ex/export-query-to-eval query last-query
-                                   (s/join " " code)))}
+    :fn (fn [{:keys [query last-query]} [code]]
+          (ex/export-query-to-eval query last-query code))}
    {:name "man"
     :arg-count 1
     :usage "<directive|variable name>"

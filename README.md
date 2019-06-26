@@ -102,9 +102,13 @@ of the program.  There are some directives that take queries as (usually
 optional) input like the `export` directive.  You can get a list of directives
 and how to use them using the `help` directive.
 
+
+### Multi-line Queries
+
 Every SQL query given is stored even after the results are retrieved from the
-database and displayed.  This query is referred to as the *last query* and is
-used in many directives like the `export` directive as mentioned.
+database and displayed.  In this way you can build queries that contain several
+lines. This multi-lined query is referred to as the *last query* and is used in
+many directives like the `export` directive as mentioned.
 
 **Important**: Those queries entered without an ending line separator
 (i.e. `;`) used with a directive on a new line are not recorded as the *last
@@ -133,6 +137,19 @@ to produce different SQL.  For the `eval` directive, this is very useful as you
 
 To purge any previous query use the `clear` directive.  To get a list of
 directives, use the `help`.
+
+
+### Send Verbatim
+
+The `send` directive is used to send SQL directly to the database and bypasses
+all directive special.  For example, some databases have the `set` reserved
+word, which is a directive in ciSQL.  To use `set` but `send` in front as such:
+```sql
+send SET :HVL = CURRENT PATH;
+```
+
+Note that this directive does not support multi-line queries. so you *must* add
+the line separator (usually `;`) and add no new lines.
 
 
 ### Variables

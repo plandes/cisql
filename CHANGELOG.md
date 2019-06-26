@@ -6,7 +6,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
 ## [Unreleased]
-
+### Added
+- Send directive to allow 
 
 ## [0.0.16] - 2019-06-23
 ### Added
