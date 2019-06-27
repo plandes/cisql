@@ -10,7 +10,7 @@ This includes functions to export to CSV files and adhoc Clojure functions."
               [zensols.cisql.conf :as conf]
               [zensols.cisql.db-access :as db]))
 
-(defn- export-table-csv
+(defn export-table-csv
   "Execute **query** and save as an CSV file to **filename**."
   [query filename]
   (letfn [(rs-handler [rs _]
@@ -24,27 +24,6 @@ This includes functions to export to CSV files and adhoc Clojure functions."
               (count (:rows rs-data))))]
     (log/infof "exporting csv to %s" filename)
     (db/execute-query query rs-handler)))
-
-(defn- narrow-query
-  "Return either **query** or **last-query** based on what's available."
-  [query last-query]
-  (log/debugf "last query: %s" last-query)
-  (let [narrowed (or query last-query)]
-    (if-not narrowed
-      (-> "no queued query (skip the query delimiter (%s) after SQL)"
-          (format (conf/config :linesep))
-          (ex-info {:query query
-                    :last-query last-query})
-          throw))
-    (if-not query
-      (log/infof "no queued query so using the last executed"))
-    narrowed))
-
-(defn export-query-to-csv
-  "Execute **query** or **last-query** and save to a CSV file."
-  [query last-query csv-name]
-  (-> (narrow-query query last-query)
-      (export-table-csv csv-name)))
 
 (defn- function-by-name
   "Export result set output to a the last defined Clojure function in a file."
@@ -62,18 +41,31 @@ This includes functions to export to CSV files and adhoc Clojure functions."
 
 (defn export-query-to-function
   "Export result set output to a the last defined Clojure function in a file."
-  [query last-query clj-file fn-name]
+  [query clj-file fn-name]
   (let [handler-fn (function-by-name clj-file fn-name)
-        fn-name (name (:name (meta handler-fn)))
+        fmeta (meta handler-fn)
+        fn-name (name (:name fmeta))
         res-inst (atom nil)]
     (letfn [(rs-handler [rs _]
-              (let [rs-data (db/result-set-to-array rs :make-string? false)
-                    {:keys [header rows]} rs-data]
-                (reset! res-inst (handler-fn rows header))
+              (let [rs-data (and rs (db/result-set-to-array rs))
+                    {:keys [header rows]} rs-data
+                    argn (count (first (:arglists (meta handler-fn))))]
+                (if (and (> argn 0) (nil? query))
+                  (-> (format "function %s expects a query with %d argument(s)"
+                              fn-name argn)
+                      (ex-info {:argn argn
+                                :fn-name fn-name})
+                      throw))
+                (->> (case argn
+                       0 (handler-fn)
+                       1 (handler-fn rows)
+                       (handler-fn rows header))
+                     (reset! res-inst))
                 (count (:rows rs-data))))]
       (log/infof "evaluating function %s" fn-name)
-      (-> (narrow-query query last-query)
-          (db/execute-query rs-handler))
+      (if query
+        (db/execute-query query rs-handler)
+        (rs-handler nil nil))
       (let [res @res-inst
             {:keys [display]} res]
         (if display
@@ -82,17 +74,16 @@ This includes functions to export to CSV files and adhoc Clojure functions."
             (println res)))))))
 
 (defn export-query-to-eval
-  [query last-query code]
+  [query code]
   (let [handler-fn (eval (read-string code))
         title "eval"
         res-inst (atom nil)]
     (letfn [(rs-handler [rs _]
-              (let [rs-data (db/result-set-to-array rs :make-string? false)
+              (let [rs-data (db/result-set-to-array rs)
                     {:keys [header rows]} rs-data]
                 (reset! res-inst (handler-fn rows header))
                 (count (:rows rs-data))))]
-      (-> (narrow-query query last-query)
-          (db/execute-query rs-handler))
+      (db/execute-query query rs-handler)
       (let [res @res-inst
             {:keys [display]} res]
         (if display

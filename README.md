@@ -249,6 +249,9 @@ You can "pipe" the results of queries to your own custom Clojure code.  The
 easiest way to do this is using the `eval` directive as demonstrated in the
 [queries and directives](#queries-and-directives) section.
 
+
+#### Loading a File
+
 In addition, the `load` directive reads a Clojure file and uses the defined
 function to process the query results.  Like the `eval` directive, this
 function takes the following parameters:
@@ -256,15 +259,14 @@ function takes the following parameters:
   name to value.
 * **header**: a list of string column names.
 
+However, functions defined in the loaded file can omit these arguments.  If
+only one is given the **rows** are passed as the singleton argument.  If no
+arguments are defined in the function the query is not invoked and a query need
+not be given.
+
 The `load` directive takes two optional arguments: the file to load and
 function to call in the file.  The file defaults to `cisql.clj` and the
 function to call defaults to the last function in the evaluated file.
-
-Direct access to a running SQL prompt with an [Emacs Cider
-session](#emacs-integration) is also available.
-
-
-#### Loading a File
 
 This example adds the string `Mrs` to each row for the `coder` column (say this
 is in a file called `fix-columns.clj`:
@@ -294,8 +296,12 @@ The following happens based on the output of this function:
   display the results just like any query
 * anything else: the value is printed
 
-Observe that you can write your functions to `printlin` anything just like any
-Clojure program and the output goes to the interactive window.
+You can write your functions to `printlin` anything just like any Clojure
+program and the output goes to the interactive window.  Direct access to a
+running SQL prompt with an [Emacs Cider session](#emacs-integration) is also
+available.  You can also clone this repo, add your own Clojure files and
+[Cider] debug your code.  Currently this isn't possible with loaded files since
+they're read and evaluated.
 
 
 #### Evaluation Directive

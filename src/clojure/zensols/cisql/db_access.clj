@@ -139,16 +139,16 @@ print and display result sets."
 (defn- print-sql-exception [sqlex]
   (if sqlex (println (format-sql-exception sqlex))))
 
-(defn- slurp-result-set
+(defn slurp-result-set
   "Return a lazy list of maps representing result set **rs** with table metadata
-  **meta**.  If key :make-string? is non-nil all data is returned as strings."
-  [rs meta & {:keys [make-string?]
-              :or {make-string? true}}]
+  **meta**.
+
+  If key :convert-fn is non-nil then use it to get the value on the result set.
+  The default calls `.getObject`."
+  [rs meta & {:keys [convert-fn]
+              :or {convert-fn #(.getObject %1 %2)}}]
   (letfn [(make-row [col]
-            {(.getColumnLabel meta col)
-             (if make-string?
-               (.getString rs col)
-               (.getObject rs col))})
+            {(.getColumnLabel meta col) (convert-fn rs col)})
           (next-row [cols]
             (if (.next rs)
               (apply merge (map make-row (range 1 (+ 1 cols))))))]
@@ -160,7 +160,9 @@ print and display result sets."
 
 Return a map with entries:
   * **header**: the column header data
-  * **rows**: a lazy list of maps each representing a row from the result set."
+  * **rows**: a lazy list of maps each representing a row from the result set.
+
+See [[slurp-result-set]] for definition of **opts**."
   [rs & opts]
   (let [meta (.getMetaData rs)
         col-count (.getColumnCount meta)
@@ -210,7 +212,7 @@ Return a map with entries:
            (.displayResults (.getResultSetPanel frame) rs true))
          :title (db-id-format)
          :new-frame? (new-frame? "rs")))
-      (let [rs-data (result-set-to-array rs)]
+      (let [rs-data (result-set-to-array rs :convert-fn #(.getString %1 %2))]
         (print-table (:header rs-data) (:rows rs-data))
         (count (:rows rs-data))))
     (finally

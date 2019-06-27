@@ -3,8 +3,8 @@
 <configuration>
     <appenders>
         <console name="console" target="SYSTEM_OUT">
-            <patternLayout pattern="%c{1}: %m%n"/>
-            <!--patternLayout pattern="%m%n"/-->
+            <!--patternLayout pattern="%c{1}: %m%n"/-->
+            <patternLayout pattern="%m%n"/>
         </console>
     </appenders>
 

@@ -121,6 +121,22 @@ See README.md for more information on directives."
 
 (conf/add-set-config-hook update-linesep-variable)
 
+(defn- narrow-query
+  "Return either **query** or **last-query** based on what's available."
+  [query last-query & {:keys [expect?]
+                       :or {expect? true}}]
+  (log/debugf "last query: %s" last-query)
+  (let [narrowed (or query last-query)]
+    (if (and expect? (nil? narrowed))
+      (-> "no queued query (skip the query delimiter (%s) after SQL)"
+          (format (conf/config :linesep))
+          (ex-info {:query query
+                    :last-query last-query})
+          throw))
+    (if-not query
+      (log/infof "no queued query so using the last executed"))
+    narrowed))
+
 (defn- directives []
   [{:name "help"
     :arg-count 0
@@ -137,9 +153,11 @@ See README.md for more information on directives."
     :arg-count 0
     :desc "clears any stored query (saved from previous lines)"
     :help-section "querying-the-database"
-    :fn (fn [& args]
+    :fn (fn [{:keys [query]} args]
           ;; last query will clear after the next event loop cycle
-          )}
+          (log/info (if query
+                      "cleared query"
+                      "no query to clear")))}
    {:name "send"
     :usage "<SQL>"
     :desc "bypass directive processing and send the query verbatim"
@@ -280,7 +298,8 @@ See README.md for more information on directives."
     :desc "export the query to a CSV file"
     :help-section "queries-and-directives"
     :fn (fn [{:keys [query last-query]} [csv-name]]
-          (ex/export-query-to-csv query last-query csv-name))}
+          (-> (narrow-query query last-query)
+              (ex/export-table-csv csv-name)))}
    {:name "do"
     :arg-count "*"
     :usage "<variable 1> [variable 2]"
@@ -306,7 +325,8 @@ See README.md for more information on directives."
                             (second args))]
             (if (> (count args) 2)
               (throw (ex-info "invalid load syntax; try 'help'" {})))
-           (ex/export-query-to-function query last-query clj-file fn-name)))}
+            (-> (narrow-query query last-query :expect? false)
+                (ex/export-query-to-function clj-file fn-name))))}
    {:name "eval"
     :arg-count "-"
     :usage "<clojure code>"
