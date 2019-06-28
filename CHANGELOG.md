@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
 ## [Unreleased]
+
+
+## [0.0.17] - 2019-06-28
 ### Added
 - Send directive to allow verbatim SQL to the database.
 - Allow variable number of arguments functions defined in loaded files.
@@ -62,7 +65,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Build
 
 
-[Unreleased]: https://github.com/plandes/cisql/compare/v0.0.16...HEAD
+[Unreleased]: https://github.com/plandes/cisql/compare/v0.0.17...HEAD
+[0.0.17]: https://github.com/plandes/cisql/compare/v0.0.16...v0.0.17
 [0.0.16]: https://github.com/plandes/cisql/compare/v0.0.15...v0.0.16
 [0.0.15]: https://github.com/plandes/clj-mkproj/compare/v0.0.12...v0.0.15
 [0.0.12]: https://github.com/plandes/clj-mkproj/compare/v0.0.12...v0.0.13
