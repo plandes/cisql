@@ -364,8 +364,8 @@ The file needs the following:
   keys:
   * **coordinates**: a sequence of the maven repository coordinates, for example:
 ```clojure
-`{:coordinates [[us.fatehi/schemacrawler "15.06.01"]
-                [us.fatehi/schemacrawler-api "15.06.01"]]}
+{:coordinates [[us.fatehi/schemacrawler "15.06.01"]
+               [us.fatehi/schemacrawler-api "15.06.01"]]}
 ```
   * **repositories**: an optional sequence of repositories in the format `{name
     url}`
