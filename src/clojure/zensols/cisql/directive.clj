@@ -13,11 +13,14 @@ See README.md for more information on directives."
             [zensols.cisql.read :as r]
             [zensols.cisql.spec :as spec]
             [zensols.cisql.db-access :as db]
+            [zensols.cisql.plugin :as plugin]
             [zensols.cisql.export :as ex]
             [zensols.cisql.pref :as pref]
             [zensols.cisql.cider-repl :as repl]))
 
 (declare directives)
+
+(def ^:private user-directives (atom []))
 
 (def ^:private man-url-format
   "The README.md GitHub URL to browse for the `man` directive command."
@@ -29,10 +32,10 @@ See README.md for more information on directives."
 See README.md for more information on directives."
   []
   (let [dirs (directives)]
-   (zipmap (map :name (directives))
+   (zipmap (map :name dirs)
            (map #(dissoc % :name) dirs))))
 
-(defn- assert-no-query
+(defn assert-no-query
   "Throw an exception if there's a current query that exists."
   [{:keys [query directive]}]
   (if query
@@ -137,8 +140,30 @@ See README.md for more information on directives."
       (log/infof "no queued query so using the last executed"))
     narrowed))
 
-(defn- directives []
-  [{:name "help"
+(defn- merge-user-directives
+  "Stable replacement of new user directives with already defined directives with
+  the same name."
+  [new-directives]
+  (let [new-dirs (zipmap (map :name new-directives) new-directives)]
+    (->> @user-directives
+         (reduce (fn [{:keys [new-dir old-dir] :as m} {:keys [name] :as dir}]
+                   (if (contains? new-dir name)
+                     {:new-dir (dissoc new-dir name)
+                      :old-dir (conj old-dir (get new-dir name))}
+                     {:new-dir new-dir
+                      :old-dir (conj old-dir dir)}))
+                 {:new-dir new-dirs
+                  :old-dir []})
+         (#(concat (:old-dir %) (vals (:new-dir %))))
+         (reset! user-directives))))
+
+(defn- built-in-directives []
+  [{:name "ver"
+    :arg-count 0
+    :desc "print the version of this program"
+    :fn (fn [& _]
+          (println (format "v%s (%s)" ver/version ver/gitref)))}
+   {:name "help"
     :arg-count 0
     :fn (fn [& _]
           (println "# Commands:")
@@ -146,9 +171,22 @@ See README.md for more information on directives."
             (println)
             (println "# Variables:")
             (conf/print-key-desc space)))}
-   (command-line-directive "conn" "connect to a database"
-                           'zensols.cisql.interactive 'interactive-directive
-                           nil "connecting-to-a-database")
+   {:name "man"
+    :arg-count 1
+    :usage "<directive|variable>"
+    :desc "browse the program documentation"
+    :help-section "documentation"
+    :fn (fn [opts [name]]
+          (assert-no-query opts)
+          (let [directive (get (directives-by-name) name)
+                section (or (:help-section directive)
+                            (conf/help-section (keyword name)))
+                url (and section (format man-url-format section))]
+            (if url
+              (do
+                (log/infof "browsing documentation at %s" url)
+                (browse/browse-url url))
+              (println (format "no documentation available for %s" name)))))}
    {:name "clear"
     :arg-count 0
     :desc "clears any stored query (saved from previous lines)"
@@ -162,19 +200,9 @@ See README.md for more information on directives."
     :usage "<SQL>"
     :desc "bypass directive processing and send the query verbatim"
     :help-section "send-verbatim"}
-   {:name "sh"
-    :arg-count ".."
-    :usage "[variable]"
-    :desc "show 'variable', or show them all if not given"
-    :help-section "variables"
-    :fn (fn [opts args]
-          (assert-no-query opts)
-          (let [vkey (and (seq? args) (first args))]
-            (if vkey
-              (->> (conf/config (keyword vkey) :expect? true)
-                   (format "%s: %s" vkey)
-                   println)
-              (conf/print-key-values))))}
+   (command-line-directive "conn" "connect to a database"
+                           'zensols.cisql.interactive 'interactive-directive
+                           nil "connecting-to-a-database")
    {:name "shconn"
     :arg-count 0
     :desc "print the current connection information"
@@ -207,6 +235,19 @@ See README.md for more information on directives."
                            'zensols.cisql.spec
                            'driver-user-registry-purge-command
                            nil "connecting-to-a-database")
+   {:name "sh"
+    :arg-count ".."
+    :usage "[variable]"
+    :desc "show 'variable', or show them all if not given"
+    :help-section "variables"
+    :fn (fn [opts args]
+          (assert-no-query opts)
+          (let [vkey (and (seq? args) (first args))]
+            (if vkey
+              (->> (conf/config (keyword vkey) :expect? true)
+                   (format "%s: %s" vkey)
+                   println)
+              (conf/print-key-values))))}
    {:name "set"
     :arg-count "*"
     :usage "<variable> [value]"
@@ -334,24 +375,15 @@ See README.md for more information on directives."
     :help-section "evaluation"
     :fn (fn [{:keys [query last-query]} [code]]
           (ex/export-query-to-eval query last-query code))}
-   {:name "man"
+   {:name "plugins"
     :arg-count 1
-    :usage "<directive|variable name>"
-    :desc "browse the program documentation"
-    :help-section "documentation"
-    :fn (fn [opts [name]]
+    :usage "<plugins directory>"
+    :desc "load all plugins from a directory"
+    :help-section "plugins"
+    :fn (fn [opts [directory]]
           (assert-no-query opts)
-          (let [directive (get (directives-by-name) name)
-                section (or (:help-section directive)
-                            (conf/help-section (keyword name)))
-                url (and section (format man-url-format section))]
-            (if url
-              (do
-                (log/infof "browsing documentation at %s" url)
-                (browse/browse-url url))
-              (println (format "no documentation available for %s" name)))))}
-   {:name "ver"
-    :arg-count 0
-    :desc "print the version of this program"
-    :fn (fn [& _]
-          (println (format "v%s (%s)" ver/version ver/gitref)))}])
+          (merge-user-directives (plugin/load-plugins directory))
+          (init-grammer))}])
+
+(defn- directives []
+  (concat (built-in-directives) @user-directives))

@@ -106,6 +106,10 @@ print and display result sets."
       (throw (ex-info "no connection; try 'connect help'" {:connected? false})))
     conn?))
 
+(defn db-spec []
+  (assert-connection)
+  @dbspec)
+
 (defn set-db-spec [spec]
   (reset! dbspec spec))
 

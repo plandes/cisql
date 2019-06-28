@@ -32,6 +32,8 @@ Features include:
 - [Usage](#usage)
     - [Online Help](#online-help)
     - [Queries and Directives](#queries-and-directives)
+    - [Multi-line Queries](#multi-line-queries)
+    - [Send Verbatim](#send-verbatim)
     - [Variables](#variables)
         - [Boolean Variables](#boolean-variables)
         - [Built-in and User Variables](#built-in-and-user-variables)
@@ -42,6 +44,7 @@ Features include:
         - [Loading a File](#loading-a-file)
         - [Evaluation Directive](#evaluation-directive)
         - [Program API Access](#program-api-access)
+        - [Plugins](#plugins)
     - [Bad State](#bad-state)
 - [Database Access](#database-access)
     - [Connecting to a Database](#connecting-to-a-database)
@@ -85,6 +88,9 @@ Clojure Interactive SQL (cisql) v0.0.10
 (C) Paul Landes 2015 - 2019
  1 >
 ```
+
+If you're in a hurry, you can skip to the section
+[connecting](#database-access) to the database.
 
 
 ### Online Help
@@ -342,6 +348,42 @@ sh table-names
 load table-meta.clj read-table-names
 ```
 
+
+#### Plugins
+
+Say you write a [Clojure load file](#loading-a-file) you use and want to save
+typing.  You can write a *plugin* that creates a new directive so you don't
+have to use the `load` directive each time.
+
+The file needs the following:
+* **namespace**: the file needs the standard namespace definition.  The
+  namesapce itself can be anything, but shouldn't be any exiting ciSQL
+  namespace.
+* **dependencies variable**: this is optional unless your plugin depends on
+  other jars to be loaded; this variable should be a map with the following
+  keys:
+  * **coordinates**: a sequence of the maven repository coordinates, for example:
+```clojure
+`{:coordinates [[us.fatehi/schemacrawler "15.06.01"]
+                [us.fatehi/schemacrawler-api "15.06.01"]]}
+```
+  * **repositories**: an optional sequence of repositories in the format `{name
+    url}`
+* **directives**: This is the definition of the directive itself.  This is a
+  map with the following keys:
+  * **arg-count**: either a number indicating the number of arguments or a
+    regular expression charater (i.e. `*`, `+`, etc) representing the number
+    of arguments.
+  * **usage**: a usage string giving a human readable description of the
+    arguments it takes.
+  * **desc**: a human readable description of documentation for the directive.
+  * **fn**: a function taking the query information map and arguments (see
+    examples).
+
+See the [webcrawler](src/plugins/schema-crawler.clj) plugin for an example.  In
+addition you can see the [built-in-directives
+function](src/clojure/zensols/cisql/directive.clj) for more examples.
+	
 
 ### Bad State
 

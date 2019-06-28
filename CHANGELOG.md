@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 - Send directive to allow verbatim SQL to the database.
 - Allow variable number of arguments functions defined in loaded files.
+- Directive plugin system.
 ### Changed
 - Allow any function to access result sets in database access library
   `db_access.clj`.
