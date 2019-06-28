@@ -4,7 +4,7 @@
   :license {:name "MIT"
             :url "https://opensource.org/licenses/MIT"
             :distribution :repo}
-  :plugins [[lein-codox "0.10.3"]
+  :plugins [[lein-codox "0.10.7"]
             [org.clojars.cvillecsteele/lein-git-version "1.2.7"]]
   :codox {:metadata {:doc/format :markdown}
           :project {:name "SQL CLI Interface"}
