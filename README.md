@@ -380,7 +380,12 @@ The file needs the following:
 See the [webcrawler](src/plugins/schema-crawler.clj) plugin for an example.  In
 addition you can see the [built-in-directives
 function](src/clojure/zensols/cisql/directive.clj) for more examples.
-	
+
+Use the `plugins` with the a directory where you store your plugins to register
+them.  All files in this directory are loaded so every file in the specified
+directory must follow the plugin format given in this section.  Otherwise the
+plugin registration will fail.
+
 
 ### Bad State
 
