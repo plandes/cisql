@@ -42,7 +42,11 @@ line by defining a Clojure source file that adheres to a set of constraints."
   (let [forms (read-all clj-file)
         dep-def (first (get-dependencies forms clj-file))]
     (log/debugf "loading dependencies: %s" dep-def)
-    (apply add-dependencies dep-def)
+    (apply add-dependencies
+           (concat [:repositories
+                    (merge cemerick.pomegranate.aether/maven-central
+                           {"clojars" "https://clojars.org/repo"})]
+            dep-def))
     (load-file clj-file)
     (-> (get-forms forms '[ns] clj-file "ns")
         second

@@ -18,7 +18,7 @@
   (->> (cond (= "*" nargs) " (ws arg)*"
              (= "+" nargs) " (ws arg)+"
              (= ".." nargs) " (ws arg)?"
-             (= "-" nargs) " #\".+\""
+             (= "-" nargs) "ws #\".+\""
              (and (number? nargs) (= 0 nargs)) ""
              (and (number? nargs) (= 1 nargs)) " ws arg"
              (and (number? nargs) (< 1 nargs))
