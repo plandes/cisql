@@ -363,10 +363,7 @@ The file needs the following:
   other jars to be loaded; this variable should be a map with the following
   keys:
   * **coordinates**: a sequence of the maven repository coordinates, for example:
-```clojure
-{:coordinates [[us.fatehi/schemacrawler "15.06.01"]
-               [us.fatehi/schemacrawler-api "15.06.01"]]}
-```
+  `{:coordinates [[us.fatehi/schemacrawler "15.06.01"]]}`
   * **repositories**: an optional sequence of repositories in the format `{name
     url}`
 * **directives**: This is the definition of the directive itself.  This is a
