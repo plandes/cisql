@@ -307,13 +307,6 @@ See README.md for more information on directives."
           (assert-no-query opts)
           (let [table (and (seq? args) (first args))]
             (db/show-table-metadata table)))}
-   ;; {:name "cat"
-   ;;  :arg-count 1
-   ;;  :usage "<catalog>"
-   ;;  :desc "set the schema/catalog of the database"
-   ;;  :fn (fn [opts [cat-name]]
-   ;;        (assert-no-query opts)
-   ;;        (db/set-catalog cat-name))}
    {:name "vaporize"
     :arg-count 0
     :desc "reset all configuration including drivers"

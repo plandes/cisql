@@ -22,7 +22,7 @@ print and display result sets."
   (atom nil))
 
 (def ^:private schema-inst
-  "For catalog based systems this contains the name of the catalog."
+  "The schema of the database, which is usually set with `set` in the DB DSL."
   (atom nil))
 
 (def ^:private db-info-data
