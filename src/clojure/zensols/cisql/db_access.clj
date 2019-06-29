@@ -7,7 +7,6 @@ print and display result sets."
            [java.sql SQLException]
            (com.zensols.gui.tabres ResultSetFrame))
   (:require [clojure.tools.logging :as log]
-            [clojure.string :as str]
             [clojure.java.jdbc :as jdbc]
             [clojure.pprint :refer (pprint print-table)]
             [zensols.tabres.display-results :as dis]
@@ -44,10 +43,10 @@ print and display result sets."
 
 (def ^:private meta-query-pattern
   "The regular expression to identify a table meta data query."
-  #"^\s*select\s*from\s*@@(?:(.+)\.)?meta")
+  #"^\s*select\s+(?:(.+)\.)?meta\s*$")
 
 (def ^:private meta-query-format
-  "select from @@%smeta;")
+  "select %smeta")
 
 (def ^:private last-frame-type
   "The state of the last type of frame used to display results."
