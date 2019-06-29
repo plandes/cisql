@@ -43,10 +43,10 @@ print and display result sets."
 
 (def ^:private meta-query-pattern
   "The regular expression to identify a table meta data query."
-  #"^\s*select\s+(?:(.+)\.)?meta\s*$")
+  #"^\s*select\s+@(?:(.+)\.)?meta\s*$")
 
 (def ^:private meta-query-format
-  "select %smeta")
+  "select @%smeta")
 
 (def ^:private last-frame-type
   "The state of the last type of frame used to display results."
