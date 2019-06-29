@@ -5,6 +5,7 @@
   (:require [clojure.tools.logging :as log]
             [clojure.string :as str]
             [zensols.actioncli.log4j2 :as lu]
+            [zensols.actioncli.util :refer (trunc)]
             [zensols.actioncli.parse :as parse :refer (with-exception)]
             [zensols.cisql.conf :as conf]
             [zensols.cisql.db-access :as db]
@@ -43,9 +44,10 @@
             (log/debugf "context: <%s>" (pr-str context))
             (invoke fn context args)))
         true
-        (-> (str "don't know what to do with query data: "
-                 (pr-str query-data))
-            (ex-info {:query-data query-data})
+        (-> (format "unknown query--probably missing query terminator (%s): %s"
+                     :linesep
+                     (trunc (pr-str query-data)))
+            (ex-info {:query-data (trunc query-data)})
             throw)))
 
 (defn process-queries

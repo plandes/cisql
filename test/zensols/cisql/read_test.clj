@@ -134,4 +134,7 @@ from table1;")))
                             "cols" "coder"
                             "some" "var"})
               (interpolate "select @@cols from @@table;@@some"))
-         "select coder from annotations;var")))
+         "select coder from annotations;var"))
+  (is (= (->> (keyword-map {"tname" "vval"})
+              (interpolate "set a @@tname"))
+         "set a vval")))

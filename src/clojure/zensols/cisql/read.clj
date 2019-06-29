@@ -11,7 +11,14 @@
   "Generated DSL parser."
   (atom nil))
 
-(def ^:dynamic interpolate-regexp #"@@([a-zA-Z0-9_]+)")
+(def ^:private interpolation-prefix
+  "The string prefix used to identify variables used for [[interpolation]]."
+  "@@")
+
+(def ^:private interpolate-regexp
+  "The string regular expression used to parse variables used
+  for [[interpolation]]."
+  (re-pattern (str interpolation-prefix "([a-zA-Z0-9_]+)")))
 
 (def ^:dynamic *std-in* nil)
 
@@ -89,8 +96,9 @@
 
 (defn interpolate [s m]
   (letfn [(repfn [[lit vname]]
-            (str (get m (keyword vname) (str "@@" vname))))]
-    (replace-by s interpolate-regexp repfn)))
+            (str (get m (keyword vname)
+                      (str interpolation-prefix vname))))]
+    (and s (replace-by s interpolate-regexp repfn))))
 
 (defn read-query
   "Read a query and process it."
@@ -114,14 +122,15 @@
                           (format "<bad prompt: %s> " e)))]
            (print prompt))
          (flush)
-         (let [user-input (or user-input (.readLine *std-in*))]
+         (let [user-input (-> user-input
+                              (or (.readLine *std-in*))
+                              (interpolate (conf/config)))]
            (log/debugf "line: %s" user-input)
            (cond (nil? user-input) (end :end-of-session)
                  (-> user-input s/trim empty?) (.append query \newline)
                  true (process-input end reset query user-input)))
          (swap! line-no inc)))
      (let [query-str (s/trim (.toString query))
-           query (if-not (empty? query-str)
-                   (interpolate query-str (conf/config)))]
+           query (if-not (empty? query-str) query-str)]
        (merge (if query {:query query})
               {:directive @directive})))))
