@@ -102,3 +102,36 @@
 from table1;")))
   (is (= {:output " 1 > ", :result {:directive {:name :shtab}}}
          (invoke-cel "shtab"))))
+
+(defn- keyword-map [m]
+  (->> m
+       (map (fn [[k v]]
+              {(keyword k) v}))
+       (apply merge)))
+
+(deftest test-interpolate []
+  (is (= (->> (keyword-map {"table" "annotations"})
+              (interpolate "select @@cols from @@table;"))
+         "select @@cols from annotations;"))
+  (is (= (->> (keyword-map {"table" "annotations"
+                            "cols" "coder"})
+              (interpolate "select @@cols from @@table;"))
+         "select coder from annotations;"))
+  (is (= (->> (keyword-map {"table" "annotations"
+                            "cols" "coder"})
+              (interpolate "@someselect @@cols from @@table;"))
+         "@someselect coder from annotations;"))
+  (is (= (->> (keyword-map {"table" "annotations"
+                            "cols" "coder"})
+              (interpolate "select @@cols from @@table;@some"))
+         "select coder from annotations;@some"))
+  (is (= (->> (keyword-map {"table" "annotations"
+                            "cols" "coder"
+                            "some" "var"})
+              (interpolate "@@some,select @@cols from @@table;"))
+         "var,select coder from annotations;"))
+  (is (= (->> (keyword-map {"table" "annotations"
+                            "cols" "coder"
+                            "some" "var"})
+              (interpolate "select @@cols from @@table;@@some"))
+         "select coder from annotations;var")))

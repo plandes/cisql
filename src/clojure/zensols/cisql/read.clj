@@ -1,6 +1,7 @@
 (ns ^{:doc "Process query at the command line from user input."
       :author "Paul Landes"}
     zensols.cisql.read
+  (:import [java.util.regex Matcher])
   (:require [clojure.tools.logging :as log]
             [clojure.string :as s]
             [instaparse.core :as insta]
@@ -9,6 +10,8 @@
 (def ^:private cmd-bnf-fn
   "Generated DSL parser."
   (atom nil))
+
+(def ^:dynamic interpolate-regexp #"@@([a-zA-Z0-9_]+)")
 
 (def ^:dynamic *std-in* nil)
 
@@ -70,6 +73,25 @@
                    (.append query \newline)
                    (if eoq? (end-fn :end-of-query))))))
 
+;; lifted directly from `clojure.string`
+(defn- replace-by
+  [^CharSequence s re f]
+  (let [m (re-matcher re s)]
+    (if (.find m)
+      (let [buffer (StringBuffer. (.length s))]
+        (loop [found true]
+          (if found
+            (do (.appendReplacement m buffer (Matcher/quoteReplacement (f (re-groups m))))
+                (recur (.find m)))
+            (do (.appendTail m buffer)
+                (.toString buffer)))))
+      s)))
+
+(defn interpolate [s m]
+  (letfn [(repfn [[lit vname]]
+            (str (get m (keyword vname) (str "@@" vname))))]
+    (replace-by s interpolate-regexp repfn)))
+
 (defn read-query
   "Read a query and process it."
   ([]
@@ -99,6 +121,7 @@
                  true (process-input end reset query user-input)))
          (swap! line-no inc)))
      (let [query-str (s/trim (.toString query))
-           query (if-not (empty? query-str) query-str)]
+           query (if-not (empty? query-str)
+                   (interpolate query-str (conf/config)))]
        (merge (if query {:query query})
               {:directive @directive})))))
