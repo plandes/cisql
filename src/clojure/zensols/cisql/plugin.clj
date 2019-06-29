@@ -56,7 +56,7 @@ line by defining a Clojure source file that adheres to a set of constraints."
 
 (defn load-plugins [path]
   (if (.isFile path)
-    [(load-plugin (.getAbsolutePath path))]
+    (load-plugin (.getAbsolutePath path))
     (do (log/infof "scanning directory %s for plugins" path)
         (->> (file-seq (io/file path))
              (filter #(.isFile %))
