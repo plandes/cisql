@@ -17,7 +17,11 @@ print and display result sets."
   "The jdbc package database spec and contains the DB host name, port etc."
   (atom nil))
 
-(def ^:private current-catalog
+(def ^:private catalog-inst
+  "For catalog based systems this contains the name of the catalog."
+  (atom nil))
+
+(def ^:private schema-inst
   "For catalog based systems this contains the name of the catalog."
   (atom nil))
 
@@ -53,16 +57,29 @@ print and display result sets."
   (atom nil))
 
 
+(defn- set-cat-or-schema [key value]
+  (case key
+    :catalog
+    (do (reset! catalog-inst value)
+        (log/infof "set catalog: %s" value)
+        (reset! dbspec nil))
+    :schema
+    (do (reset! schema-inst value)
+        (log/infof "set schema: %s" value)
+        (reset! dbspec nil))
+    true))
+
+(conf/add-set-config-hook set-cat-or-schema)
+
 (defn- resolve-connection [db]
   (let [conn (jdbc/db-connection db)
-        catalog @current-catalog]
-    (if catalog (.setCatalog conn catalog))
+        catalog @catalog-inst
+        schema @schema-inst]
+    (if catalog
+      (.setCatalog conn catalog))
+    (if schema
+      (.setSchema conn schema))
     conn))
-
-(defn set-catalog [catalog]
-  (reset! current-catalog catalog)
-  (reset! dbspec nil)
-  (log/infof "set catalog: %s" catalog))
 
 ;; db metadata
 (defn- db-info
@@ -243,8 +260,8 @@ See [[slurp-result-set]] for definition of **opts**."
   (let [conn (resolve-connection db)
         dbmeta (.getMetaData conn)
         rs (if table
-             (.getColumns dbmeta nil nil table "%")
-             (.getTables dbmeta nil nil "%" nil))
+             (.getColumns dbmeta @catalog-inst @schema-inst table "%")
+             (.getTables dbmeta @catalog-inst @schema-inst "%" nil))
         meta (.getMetaData rs)]
     [rs meta]))
 

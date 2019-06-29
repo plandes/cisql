@@ -47,15 +47,18 @@ line by defining a Clojure source file that adheres to a set of constraints."
                     (merge cemerick.pomegranate.aether/maven-central
                            {"clojars" "https://clojars.org/repo"})]
             dep-def))
+    (log/infof "loading plugin from file: %s" clj-file)
     (load-file clj-file)
     (-> (get-forms forms '[ns] clj-file "ns")
         second
         (ns-resolve 'directives)
         var-get)))
 
-(defn load-plugins [directory]
-  (log/infof "scanning directory %s for plugins" directory)
-  (->> (file-seq (io/file directory))
-       (filter #(.isFile %))
-       (map #(load-plugin (.getAbsolutePath %)))
-       (apply concat)))
+(defn load-plugins [path]
+  (if (.isFile path)
+    [(load-plugin (.getAbsolutePath path))]
+    (do (log/infof "scanning directory %s for plugins" path)
+        (->> (file-seq (io/file path))
+             (filter #(.isFile %))
+             (map #(load-plugin (.getAbsolutePath %)))
+             (apply concat)))))

@@ -260,9 +260,9 @@ See README.md for more information on directives."
                 throw))
           (let [key (keyword (first args))
                 oldval (conf/config key)
-                newval (->> (if (> (count args) 1)
-                              (s/join " " (rest args))
-                              query)
+                newval (->> (cond (= (count args) 0) nil
+                                  (> (count args) 1) (s/join " " (rest args))
+                                  true query)
                             (#(if (contains? #{"true" "false"} %)
                                 (Boolean/parseBoolean %)
                                 %)))]
@@ -307,13 +307,13 @@ See README.md for more information on directives."
           (assert-no-query opts)
           (let [table (and (seq? args) (first args))]
             (db/show-table-metadata table)))}
-   {:name "cat"
-    :arg-count 1
-    :usage "<catalog>"
-    :desc "set the schema/catalog of the database"
-    :fn (fn [opts [cat-name]]
-          (assert-no-query opts)
-          (db/set-catalog cat-name))}
+   ;; {:name "cat"
+   ;;  :arg-count 1
+   ;;  :usage "<catalog>"
+   ;;  :desc "set the schema/catalog of the database"
+   ;;  :fn (fn [opts [cat-name]]
+   ;;        (assert-no-query opts)
+   ;;        (db/set-catalog cat-name))}
    {:name "vaporize"
     :arg-count 0
     :desc "reset all configuration including drivers"
@@ -377,7 +377,7 @@ See README.md for more information on directives."
     :help-section "evaluation"
     :fn (fn [{:keys [query last-query]} [code]]
           (ex/export-query-to-eval query last-query code))}
-   {:name "plugins"
+   {:name "plugin"
     :arg-count 1
     :usage "<plugins directory>"
     :desc "load all plugins from a directory"
@@ -385,7 +385,11 @@ See README.md for more information on directives."
     :fn (fn [opts [directory]]
           (assert-no-query opts)
           (merge-user-directives (plugin/load-plugins directory))
-          (init-grammer))}])
+          (init-grammer)
+          (->> @user-directives
+               (map :name)
+               (s/join ", ")
+               (log/infof "registered plugins: %s")))}])
 
 (defn- directives []
   (concat (built-in-directives) @user-directives))

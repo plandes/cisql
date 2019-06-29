@@ -170,6 +170,18 @@ set prompt 'darkstar %1$s> '
 **Important**: To add white space you can use quote (single quote `'`) for
 verbatim values.
 
+Some built in variables can be set to a *none* value like `catalog`, which
+means to not set a connection's catalog.  To set a variable to the *none* value
+simply omit the value, such as:
+```sql
+set catalog
+```
+
+You can also remove one or more variables with the `rm` directive such as:
+```sql
+rm v1 v2
+```
+
 
 #### Boolean Variables
 
@@ -383,10 +395,10 @@ See the [webcrawler](src/plugins/schema-crawler.clj) plugin for an example.  In
 addition you can see the [built-in-directives
 function](src/clojure/zensols/cisql/directive.clj) for more examples.
 
-Use the `plugins` with the a directory where you store your plugins to register
-them.  All files in this directory are loaded so every file in the specified
-directory must follow the plugin format given in this section.  Otherwise the
-plugin registration will fail.
+Use the `plugin` with the file or directory.  If the given path is a directory,
+all files in that directory are loaded and assumed to be Clojure source files.
+For this reason every file in the specified directory must follow the plugin
+format given in this section.  Otherwise the plugin registration will fail.
 
 
 ### Bad State
