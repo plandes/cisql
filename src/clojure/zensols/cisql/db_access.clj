@@ -69,6 +69,8 @@ print and display result sets."
         (reset! dbspec nil))
     true))
 
+;; TODO: find out why currently only catalog shows as being set on start up and
+;; not schema; however, schema seems to be set correctly
 (conf/add-set-config-hook set-cat-or-schema)
 
 (defn- resolve-connection [db]
@@ -254,6 +256,20 @@ See [[slurp-result-set]] for definition of **opts**."
                     :interrupt-execute-query ieq})
           throw))))
 
+(defn- limit-result-set [conn rs]
+  (let [row-count (conf/config :rowcount)
+        row-count (if row-count
+                    (read-string row-count))]
+    (if-not row-count
+      rs
+      (let [conn (org.apache.commons.dbcp.DelegatingConnection. conn)
+            lc (atom 0)]
+        (proxy [org.apache.commons.dbcp.DelegatingResultSet] [conn rs]
+          (next []
+            (if (> (swap! lc inc) row-count)
+              false
+              (proxy-super next))))))))
+
 (defn- table-metadata
   "Display the meta data of **table**, which includes column names and metadata."
   [table db]
@@ -262,6 +278,7 @@ See [[slurp-result-set]] for definition of **opts**."
         rs (if table
              (.getColumns dbmeta @catalog-inst @schema-inst table "%")
              (.getTables dbmeta @catalog-inst @schema-inst "%" nil))
+        rs (limit-result-set conn rs)
         meta (.getMetaData rs)]
     [rs meta]))
 
@@ -291,7 +308,7 @@ See [[slurp-result-set]] for definition of **opts**."
         (let [start (System/currentTimeMillis)]
           (check-interrupt curr-query-no)
           (if (.execute stmt query)
-            (let [rs (.getResultSet stmt)
+            (let [rs (limit-result-set conn (.getResultSet stmt))
                   meta (.getMetaData rs)]
               (try
                 (check-interrupt curr-query-no)

@@ -14,6 +14,7 @@ system."
    [:strict true "if true, do not allow setting of free variables"
        "built-in-and-user-variables"]
    [:linesep ";" "tell where to end a query and then send"]
+   [:rowcount nil "the number of rows to display (all be default)" "row-count"]
    [:loglevel "info" "logging verbosity (<error|warn|info|debug|trace>)"]
    [:errorlong false "if true, provide more SQL level error information"]
    [:prex false "print exception stack traces"]

@@ -37,6 +37,9 @@
                  ;; repl
                  [cider/cider-nrepl "0.21.1"]
 
+                 ;; jdbc
+                 [commons-dbcp/commons-dbcp "1.4"]
+
                  ;; logging: log4j2
                  [org.apache.logging.log4j/log4j-core "2.7"]
                  [org.apache.logging.log4j/log4j-slf4j-impl "2.7"]

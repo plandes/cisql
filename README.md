@@ -109,7 +109,7 @@ optional) input like the `export` directive.  You can get a list of directives
 and how to use them using the `help` directive.
 
 
-### Multi-line Queries
+#### Multi-line Queries
 
 Every SQL query given is stored even after the results are retrieved from the
 database and displayed.  In this way you can build queries that contain several
@@ -145,7 +145,7 @@ To purge any previous query use the `clear` directive.  To get a list of
 directives, use the `help`.
 
 
-### Send Verbatim
+#### Send Verbatim
 
 The `send` directive is used to send SQL directly to the database and bypasses
 all directive special.  For example, some databases have the `set` reserved
@@ -156,6 +156,23 @@ send SET :HVL = CURRENT PATH;
 
 Note that this directive does not support multi-line queries. so you *must* add
 the line separator (usually `;`) and add no new lines.
+
+
+#### Row Count
+
+The special variable `rowcount` determines how many rows are returned from all
+queries, **which includes meta data**.  The default is not value so all results
+come back.  Note that this proceeds any `limit` or `top N` constraints on your
+query.
+
+It's important to remember to unset this when you're finished so the program
+doesn't give unexpected truncated results when constraining the query or
+getting database metadata.  For this reason, the program treats this as more of
+a temporary usage and it is up to the user to reset the variable to the *none*
+value, which can be accomplished as such:
+```sql
+set rowcount
+```
 
 
 ### Variables
