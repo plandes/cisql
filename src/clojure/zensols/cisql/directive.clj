@@ -5,6 +5,7 @@ See README.md for more information on directives."
     zensols.cisql.directive
   (:require [clojure.tools.logging :as log]
             [clojure.string :as s]
+            [clojure.java.io :as io]
             [clojure.java.browse :as browse]
             [zensols.actioncli.log4j2 :as lu]
             [zensols.actioncli.parse :as parse]
@@ -372,12 +373,14 @@ See README.md for more information on directives."
           (ex/export-query-to-eval query last-query code))}
    {:name "plugin"
     :arg-count 1
-    :usage "<plugins directory>"
-    :desc "load all plugins from a directory"
+    :usage "<path>"
+    :desc "load from a file or all plugins from a directory"
     :help-section "plugins"
-    :fn (fn [opts [directory]]
+    :fn (fn [opts [path]]
           (assert-no-query opts)
-          (merge-user-directives (plugin/load-plugins directory))
+          (->> (io/file path)
+               plugin/load-plugins
+               merge-user-directives)
           (init-grammer)
           (->> @user-directives
                (map :name)
