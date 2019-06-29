@@ -237,7 +237,7 @@ See README.md for more information on directives."
                            nil "connecting-to-a-database")
    {:name "sh"
     :arg-count ".."
-    :usage "[variable]"
+    :usage "[var]"
     :desc "show 'variable', or show them all if not given"
     :help-section "variables"
     :fn (fn [opts args]
@@ -250,7 +250,7 @@ See README.md for more information on directives."
               (conf/print-key-values))))}
    {:name "set"
     :arg-count "*"
-    :usage "<variable> [value]"
+    :usage "<var> [value]"
     :desc "set a variable to 'value' or previous query input"
     :help-section "variables"
     :fn (fn [{:keys [query] :as opts} args]
@@ -269,16 +269,18 @@ See README.md for more information on directives."
             (conf/set-config key newval)
             (println (format "%s: %s -> %s" (name key) oldval newval))))}
    {:name "rm"
-    :arg-count 1
-    :usage "<variable>"
+    :arg-count "*"
+    :usage "<var> [var2] ..."
     :desc "delete user variable"
     :help-section "variables"
-    :fn (fn [opts [name]]
+    :fn (fn [opts vars]
           (assert-no-query opts)
-          (conf/remove-config (keyword name)))}
+          (doseq [var vars]
+            (conf/remove-config (keyword var)))
+          (log/infof "removed variable(s): %s" (s/join ", " vars)))}
    {:name "tg"
     :arg-count 1
-    :usage "<variable>"
+    :usage "<var>"
     :desc "toggle a boolean variable"
     :help-section "variables"
     :fn (fn [opts [key-name]]
@@ -343,7 +345,7 @@ See README.md for more information on directives."
               (ex/export-table-csv csv-name)))}
    {:name "do"
     :arg-count "*"
-    :usage "<variable 1> [variable 2]"
+    :usage "<var 1> [var 2] ..."
     :desc "execute the contents of a variables"
     :help-section "macros"
     :fn (fn [opts varnames]
