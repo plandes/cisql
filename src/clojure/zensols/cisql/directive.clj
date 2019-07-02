@@ -337,6 +337,16 @@ See README.md for more information on directives."
     :fn (fn [{:keys [query last-query]} [csv-name]]
           (-> (narrow-query query last-query)
               (ex/export-table-csv csv-name)))}
+   {:name "print"
+    :arg-count ".."
+    :usage "text to print"
+    :desc "print a line of text"
+    :help-section "print"
+    :fn (fn [{:keys [query last-query]} [arg-text]]
+          (if query
+            (println query))
+          (if arg-text
+            (println arg-text)))}
    {:name "do"
     :arg-count "*"
     :usage "<var 1> [var 2] ..."
@@ -349,6 +359,19 @@ See README.md for more information on directives."
           (->> varnames
                (map #(conf/config (keyword %)))
                (array-map :eval)))}
+   {:name "run"
+    :arg-count "*"
+    :usage "<file1> [file2]..."
+    :desc "execute the contents of file(s)"
+    :help-section "macros"
+    :fn (fn [opts files]
+          (assert-no-query opts)
+          (doseq [file files]
+            (if-not (.exists (io/file file))
+              (-> (format "no such file: %s" file)
+                  (ex-info {:file file})
+                  throw)))
+          {:run files})}
    {:name "load"
     :arg-count "*"
     :usage "[file] [function]"

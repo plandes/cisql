@@ -3,6 +3,7 @@
     zensols.cisql.process-query
   (:import (java.io BufferedReader InputStreamReader StringReader))
   (:require [clojure.tools.logging :as log]
+            [clojure.java.io :as io]
             [clojure.string :as str]
             [zensols.actioncli.log4j2 :as lu]
             [zensols.actioncli.util :refer (trunc)]
@@ -13,6 +14,13 @@
             [zensols.cisql.directive :as di]))
 
 (def ^:private last-query (atom nil))
+
+(def ^:private init-file
+  (-> (System/getProperty "user.home")
+      (io/file ".cisql")))
+
+(declare ^:private run-file)
+(declare ^:private run-reader)
 
 (defn- invoke
   "Invoke the directive or command-event-loop function and handle errors."
@@ -70,11 +78,15 @@
              directives (di/directives-by-name)]
          (log/tracef "directive: %s" directive)
          (let [res (process-query dir-fn query-data directive directives)]
-           (if (and (map? res) (contains? res :eval))
-             (doseq [user-input (:eval res)]
-               (log/debugf "do processing: %s" user-input)
-               (let [new-res (process-queries dir-fns (r/read-query user-input))]
-                 (log/debugf "do processed eval: %s -> %s" user-input res)))))
+           (when (map? res)
+             (cond (contains? res :eval)
+                   (doseq [user-input (:eval res)]
+                     (with-open [reader (-> (StringReader. user-input)
+                                            (BufferedReader.))]
+                       (run-reader reader)))
+                   (contains? res :run)
+                   (doseq [file (:run res)]
+                     (run-file file)))))
          (when (and (not one-shot?) (= :end-of-query directive))
            (log/debug "while read")
            (recur (r/read-query))))))
@@ -89,12 +101,35 @@
      (uncaughtException [_ thread ex]
        (log/error ex "Uncaught exception on" (.getName thread))))))
 
+(defn- run-reader [reader]
+  (binding [r/*std-in* reader
+            r/*print-prompt* false]
+    (let [loop-again (atom true)]
+      (letfn [(stop-loop [_]
+                (reset! loop-again false))]
+        (while @loop-again
+          (process-queries
+           {:end-of-query (fn [{:keys [query]}]
+                            (db/assert-connection)
+                            (db/execute-query query))
+            :end-of-session stop-loop
+            :end-file stop-loop}))))))
+
+(defn- run-file [file]
+  (with-open [reader (io/reader file)]
+    (run-reader reader)))
+
 (defn start-event-loop
   "Start the command event loop using standard in/out."
   []
   (init-thread-exception-handler)
   (di/init-grammer)
   (db/configure-db-access)
+  (try
+    (if (.exists init-file)
+      (run-file init-file))
+    (catch Exception e
+      (log/error e)))
   (while true
     (try
       (binding [r/*std-in* (BufferedReader. (InputStreamReader. System/in))]

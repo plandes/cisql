@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Allow variable number of arguments functions defined in loaded files.
 - Directive plugin system, which enables users to write their own directives.
 - Add `rowcount` variable, which limits number of returned rows.
+- Add `run` directive.
 ### Changed
 - Allow any function to access result sets in database access library
   `db_access.clj`.
