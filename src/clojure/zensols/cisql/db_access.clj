@@ -56,17 +56,14 @@ print and display result sets."
   "The state of the last type of frame used to display results."
   (atom nil))
 
-
 (defn- set-cat-or-schema [key value]
   (case key
     :catalog
     (do (reset! catalog-inst value)
-        (log/infof "set catalog: %s" value)
-        (reset! dbspec nil))
+        (log/infof "set catalog: %s" value))
     :schema
     (do (reset! schema-inst value)
-        (log/infof "set schema: %s" value)
-        (reset! dbspec nil))
+        (log/infof "set schema: %s" value))
     true))
 
 ;; TODO: find out why currently only catalog shows as being set on start up and

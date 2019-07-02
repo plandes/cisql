@@ -9,13 +9,13 @@ system."
             [zensols.cisql.pref :as pref]))
 
 (def ^:private var-meta
-  [[:catalog nil "set the catalog (resets connection)"]
+  [[:loglevel "info" "logging verbosity (<error|warn|info|debug|trace>)"]
+   [:catalog nil "set the catalog (resets connection)"]
    [:schema nil "set the schema (resets connection)"]
    [:strict true "if true, do not allow setting of free variables"
        "built-in-and-user-variables"]
    [:linesep ";" "tell where to end a query and then send"]
    [:rowcount nil "the number of rows to display (all be default)" "row-count"]
-   [:loglevel "info" "logging verbosity (<error|warn|info|debug|trace>)"]
    [:errorlong false "if true, provide more SQL level error information"]
    [:prex false "print exception stack traces"]
    [:prompt " %1$s > " "a format string for the promp"
@@ -136,8 +136,11 @@ system."
   []
   (let [conf (config)]
     (letfn [(pr-conf [key]
-              (println (format " * %s: %s"
-                               (name key) (get conf key "<none>"))))]
+              (let [val (get conf key)
+                    val (if (nil? val)
+                          "<none>"
+                          val)]
+               (println (format " * %s: %s" (name key) val))))]
       (println "# Built in variables:")
       (->> (map first var-meta)
            (map pr-conf)
