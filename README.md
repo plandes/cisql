@@ -32,11 +32,14 @@ Features include:
 - [Usage](#usage)
     - [Online Help](#online-help)
     - [Queries and Directives](#queries-and-directives)
-    - [Multi-line Queries](#multi-line-queries)
-    - [Send Verbatim](#send-verbatim)
+        - [Multi-line Queries](#multi-line-queries)
+        - [Send Verbatim](#send-verbatim)
+        - [Row Count](#row-count)
+        - [Print Directive](#print-directive)
     - [Variables](#variables)
         - [Boolean Variables](#boolean-variables)
         - [Built-in and User Variables](#built-in-and-user-variables)
+        - [Variable Substitution](#variable-substitution)
     - [Macros](#macros)
     - [Graphical Results](#graphical-results)
     - [Database Meta Data](#database-meta-data)
@@ -45,6 +48,8 @@ Features include:
         - [Evaluation Directive](#evaluation-directive)
         - [Program API Access](#program-api-access)
         - [Plugins](#plugins)
+    - [Run SQL Offline](#run-sql-offline)
+    - [Start Up Execution Resource File](#start-up-execution-resource-file)
     - [Bad State](#bad-state)
 - [Database Access](#database-access)
     - [Connecting to a Database](#connecting-to-a-database)
@@ -174,6 +179,13 @@ value, which can be accomplished as such:
 set rowcount
 ```
 
+#### Print Directive
+
+The `print` directive prints a message and utilizes [variable
+substitution](#variable-substitution) like any other query or directive.
+This directive is useful for instances when executing [offline
+SQL](#run-sql-offline).
+
 
 ### Variables
 
@@ -226,6 +238,21 @@ When you turn this off (use `set strict false`), user variables can be added
 using the `set` and `tg` directives.
 
 User defined variables can be unset/removed with the `rm` directive.
+
+
+#### Variable Substitution
+
+Any series of characters and numbers that are preceded by `@@` are substituted
+by that variable's value.  For example:
+```sql
+ 1 > set mytable items
+mytable: null -> items
+ 1 > print 'my table is @@mytable'
+my table is items
+ 1 > select * from @@mytable;
+executing: select * from items
+731 row(s) affected (0.019s)
+```
 
 
 ### Macros
@@ -416,6 +443,20 @@ Use the `plugin` with the file or directory.  If the given path is a directory,
 all files in that directory are loaded and assumed to be Clojure source files.
 For this reason every file in the specified directory must follow the plugin
 format given in this section.  Otherwise the plugin registration will fail.
+
+
+### Run SQL Offline
+
+You can execute a series of queries and/or directives as if they were given
+directly on the command line from a file.  The `run` directive takes a one or
+more files that are executed on the command line.
+
+
+### Start Up Execution Resource File
+
+The program looks for and executes the contents of `~/.cisql` if it exists just
+as if the `run` directive was used (see the `run`
+[directive](#run-sql-offline)).
 
 
 ### Bad State

@@ -363,7 +363,7 @@ See README.md for more information on directives."
     :arg-count "*"
     :usage "<file1> [file2]..."
     :desc "execute the contents of file(s)"
-    :help-section "macros"
+    :help-section "run-sql-offline"
     :fn (fn [opts files]
           (assert-no-query opts)
           (doseq [file files]
