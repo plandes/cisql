@@ -295,13 +295,13 @@ The `shtab` displays all table meta data in the database or the meta data for a
 table if the table name is given.  However, meta data is also available to
 directives that take SQL result set output by using a special syntax:
 ```sql
-select from @meta;
+select @meta;
 ```
 
 A table is specified before the `metadata` keyword to get a table meta data
 result set.:
 ```sql
-select from @some_table.meta;
+select @some_table.meta;
 ```
 
 Note that the query terminator (`;` in this case) still needs to be present.
