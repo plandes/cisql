@@ -51,6 +51,7 @@ Features include:
     - [Run SQL Offline](#run-sql-offline)
     - [Start Up Execution Resource File](#start-up-execution-resource-file)
     - [Bad State](#bad-state)
+    - [Command Line Help](#command-line-help)
 - [Database Access](#database-access)
     - [Connecting to a Database](#connecting-to-a-database)
     - [Installing new JDBC Drivers](#installing-new-jdbc-drivers)
@@ -470,6 +471,28 @@ defaults.  The directives used for this are:
 
 Of course you want to exercises extreme caution with these as they are very
 destructive.
+
+
+### Command Line Help
+
+The command line usage for convenience is given here:
+
+```sql
+usage: cisql [options]
+
+Clojure Interactive SQL (cisql) v0.0.18 
+(C) Paul Landes 2015 - 2019
+
+Connect to a database
+  -n, --name <name>                        JDBC driver name (ex: mysql)
+  -l, --level <log level>       INFO       Log level to set in the Log4J2 system.
+  -u, --user <string>                      login name
+  -p, --password <string>                  login password
+  -h, --host <string>           localhost  database host name
+  -d, --database <string>                  database name
+      --port <number>                      database port
+  -c, --config <k1=v1>[,k2=v2]             set session configuration
+```
 
 
 ## Database Access

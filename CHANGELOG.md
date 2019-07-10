@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- Add back command line help in docs.
+
 
 ## [0.0.18] - 2019-07-02
 ### Added
