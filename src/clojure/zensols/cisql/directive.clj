@@ -393,7 +393,7 @@ See README.md for more information on directives."
     :desc "evaluate a query with clojure code"
     :help-section "evaluation"
     :fn (fn [{:keys [query last-query]} [code]]
-          (ex/export-query-to-eval query last-query code))}
+          (ex/export-query-to-eval (or query last-query) code))}
    {:name "plugin"
     :arg-count 1
     :usage "<path>"
