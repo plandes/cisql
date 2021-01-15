@@ -35,7 +35,7 @@
                  [instaparse "1.4.5"]
 
                  ;; repl
-                 [cider/cider-nrepl "0.21.1"]
+                 [cider/cider-nrepl "0.25.3"]
 
                  ;; jdbc
                  [commons-dbcp/commons-dbcp "1.4"]
