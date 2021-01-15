@@ -8,8 +8,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
-## [0.0.19] - 2020-11-09
+## [0.0.20] - 2021-01-14
+### Changed
+- nRepl bump for newer version of cider integration.
 
+
+## [0.0.19] - 2020-11-09
 ### Added
 - Add back command line help in docs.
 ### Changed
@@ -80,7 +84,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Build
 
 
-[Unreleased]: https://github.com/plandes/cisql/compare/v0.0.19...HEAD
+[Unreleased]: https://github.com/plandes/cisql/compare/v0.0.20...HEAD
+[0.0.20]: https://github.com/plandes/cisql/compare/v0.0.19...v0.0.20
 [0.0.19]: https://github.com/plandes/cisql/compare/v0.0.18...v0.0.19
 [0.0.18]: https://github.com/plandes/cisql/compare/v0.0.17...v0.0.18
 [0.0.17]: https://github.com/plandes/cisql/compare/v0.0.16...v0.0.17
