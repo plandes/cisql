@@ -183,7 +183,7 @@ system."
 
 (defn format-intro []
   (format "Clojure Interactive SQL (cisql) %s
-(C) Paul Landes 2015 - 2019"
+(C) Paul Landes 2015 - 2021"
           (format-version)))
 
 (defn print-help []
