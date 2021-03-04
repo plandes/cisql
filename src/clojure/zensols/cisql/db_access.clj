@@ -197,19 +197,28 @@ See [[slurp-result-set]] for definition of **opts**."
   (let [[old _] (swap-vals! last-frame-type #(identity %2) new-frame-type)]
     (not (= new-frame-type old))))
 
+(defn- display-height-width-fudge
+  "Return the pixels to add to the gui as `[height width]`."
+  []
+  [(Integer/parseInt (or (conf/config :guiheight) "0"))
+   (Integer/parseInt (or (conf/config :guiwidth) "0"))])
+
 (defn display-results
   "Display results either in text or as a graphical swing table.
-  
+
   See [[zensols.cisql.db-access/display-result-set]]."
   [data header title]
   (if (conf/config :gui)
     (let [data (->> data
                     (map (fn [row]
-                           (map #(get row %) header))))]
+                           (map #(get row %) header))))
+          [height width] (display-height-width-fudge)]
       (dis/display-results data
                            :column-names header
                            :title title
-                           :new-frame? (new-frame? "default")))
+                           :new-frame? (new-frame? "default")
+                           :add-height height
+                           :add-width width))
     (print-table header data)))
 
 (defn- display-result-set
@@ -221,16 +230,19 @@ See [[slurp-result-set]] for definition of **opts**."
   [rs meta]
   (try
     (if (conf/config :gui)
-      (binding [dis/frame-factory-fn
-                (fn []
-                  (let [frame (ResultSetFrame. false)]
-                    (.init frame)
-                    frame))]
-        (dis/display-results
-         (fn [frame]
-           (.displayResults (.getResultSetPanel frame) rs true))
-         :title (db-id-format)
-         :new-frame? (new-frame? "rs")))
+      (let [[height width] (display-height-width-fudge)]
+        (binding [dis/frame-factory-fn
+                  (fn []
+                    (let [frame (ResultSetFrame. false)]
+                      (.init frame)
+                      frame))]
+          (dis/display-results
+           (fn [frame]
+             (.displayResults (.getResultSetPanel frame) rs true))
+           :title (db-id-format)
+           :new-frame? (new-frame? "rs")
+           :add-height height
+           :add-width width)))
       (let [rs-data (result-set-to-array rs :convert-fn #(.getString %1 %2))]
         (print-table (:header rs-data) (:rows rs-data))
         (count (:rows rs-data))))

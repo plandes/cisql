@@ -29,7 +29,7 @@
                  [com.cemerick/pomegranate "0.3.1"]
 
                  ;; gui
-                 [com.zensols.gui/tabres "0.0.10"]
+                 [com.zensols.gui/tabres "0.0.11"]
 
                  ;; mnemonic DSL
                  [instaparse "1.4.5"]

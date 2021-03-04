@@ -23,6 +23,8 @@ system."
    [:sigintercept true "if true, intercept and break on Control-C signals"]
    [:gui false "use a graphical window to display result sets"
     "graphical-results"]
+   [:guiheight 0 "the number of pixels to add to the height of the GUI window"]
+   [:guiwidth 0 "the number of pixels to add to the width of the  GUI window"]
    [:headless true "use separate window for GUI (require restart)"
     "graphical-results"]])
 
