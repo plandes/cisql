@@ -200,8 +200,8 @@ See [[slurp-result-set]] for definition of **opts**."
 (defn- display-height-width-fudge
   "Return the pixels to add to the gui as `[height width]`."
   []
-  [(Integer/parseInt (or (conf/config :guiheight) "0"))
-   (Integer/parseInt (or (conf/config :guiwidth) "0"))])
+  [(Integer/parseInt (str (or (conf/config :guiheight) "0")))
+   (Integer/parseInt (str (or (conf/config :guiwidth) "0")))])
 
 (defn display-results
   "Display results either in text or as a graphical swing table.
