@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+## [0.0.22] - 2021-06-05
+### Changed
+- Bug fix using GUI results on a fresh install.
+
+
 ## [0.0.21] - 2021-03-04
 ### Changed
 - Add built in variables for adding *fudge* window space to allow extra pixels
@@ -90,7 +95,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Build
 
 
-[Unreleased]: https://github.com/plandes/cisql/compare/v0.0.21...HEAD
+[Unreleased]: https://github.com/plandes/cisql/compare/v0.0.22...HEAD
+[0.0.22]: https://github.com/plandes/cisql/compare/v0.0.21...v0.0.22
 [0.0.21]: https://github.com/plandes/cisql/compare/v0.0.20...v0.0.21
 [0.0.20]: https://github.com/plandes/cisql/compare/v0.0.19...v0.0.20
 [0.0.19]: https://github.com/plandes/cisql/compare/v0.0.18...v0.0.19
