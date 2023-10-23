@@ -62,6 +62,7 @@ Features include:
 - [Emacs Integration](#emacs-integration)
 - [Documentation](#documentation)
     - [API Documentation](#api-documentation)
+- [Known Issues](#known-issues)
 - [Changelog](#changelog)
 - [License](#license)
 
@@ -673,6 +674,16 @@ This program is written in Clojure.  See the API
 
 If you integrate this program with you own, please let me know.  I'm interested
 in knowing how others use it.
+
+
+## Known Issues
+
+The default version of the SQLite driver does not work under macOS M1 chips.
+To fix this, use the following command to install a version that works:
+```sql
+removedrv sqlite
+newdrv -n sqlite -c org.sqlite.JDBC -u jdbc:sqlite:%5$s -d org.xerial/sqlite-jdbc/3.41.2.1
+```
 
 
 ## Changelog
