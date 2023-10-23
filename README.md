@@ -685,6 +685,12 @@ removedrv sqlite
 newdrv -n sqlite -c org.sqlite.JDBC -u jdbc:sqlite:%5$s -d org.xerial/sqlite-jdbc/3.41.2.1
 ```
 
+There have been reports of the Clojure dependency resolver not downloading jars
+correctly.  In that case, use the following command to install this jar:
+```bash
+mvn org.apache.maven.plugins:maven-dependency-plugin:2.10:get -Dartifact=org.xerial:sqlite-jdbc:3.41.2.1
+```
+
 
 ## Changelog
 
